@@ -1,0 +1,11 @@
+{
+  "name": "Intifaac & War-idad Student Registration System",
+  "short_name": "Student System",
+  "description": "Student registration and examination management for both schools.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f3f6f9",
+  "theme_color": "#12304a",
+  "icons": []
+}

@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#12304a">
+<meta name="description" content="Student Registration System for Intifaac Private School and War-idad Secondary School.">
+<link rel="manifest" href="manifest.json">
+<title>Student Registration System</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--navy:#12304a;--blue:#176b87;--mint:#e8f5f2;--bg:#f3f6f9;--ink:#1d2935;--muted:#667789;--line:#dce4ea}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:Arial,sans-serif;color:var(--ink)}
+header{background:linear-gradient(110deg,var(--navy),var(--blue));color:white;padding:22px 5%;display:flex;justify-content:space-between;align-items:center;gap:12px}
+header h1{font-size:22px;margin:0}header p{margin:5px 0 0;color:#d9edf1;font-size:13px}
+main{max-width:1100px;margin:28px auto;padding:0 16px}
+.card{background:white;border:1px solid var(--line);border-radius:14px;padding:22px;box-shadow:0 5px 18px #18354a0b;margin-bottom:18px}
+.login{max-width:440px;margin:8vh auto}.hidden{display:none!important}
+h2{font-size:19px;margin:0 0 16px;color:var(--navy)}
+label{display:block;font-size:13px;font-weight:700;margin:12px 0 6px}
+input,select{width:100%;padding:11px 12px;border:1px solid #cbd6df;border-radius:8px;font-size:14px;background:white}
+input[type=checkbox]{width:auto;margin-right:7px}
+button{border:0;border-radius:8px;padding:11px 16px;background:var(--blue);color:white;font-weight:700;cursor:pointer}
+button.secondary{background:#eaf0f4;color:var(--navy)}button.danger{background:#a43b3b}button:disabled{opacity:.55;cursor:wait}
+.row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:16px}
+.topline{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.status{color:var(--muted);font-size:13px;margin-top:10px;min-height:18px}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:11px 8px;border-bottom:1px solid var(--line)}th{color:var(--muted);background:#f8fafb}
+.tablewrap{overflow:auto}.smallbtn{padding:7px 10px;font-size:12px;margin:2px}
+.badge{display:inline-block;background:var(--mint);color:#17624f;padding:5px 9px;border-radius:20px;font-size:12px}
+.dashboard-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.stat-card{margin:0;background:#f8fbfd;box-shadow:none}.stat-card h1{font-size:30px;margin:8px 0;color:var(--blue)}
+.exam-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.exam-grid>div{min-width:0}
+@media(max-width:650px){.row,.dashboard-grid,.exam-grid{grid-template-columns:1fr}header{padding:18px 16px}header h1{font-size:18px}.card{padding:16px}}
+@media print{header,.no-print,.actions button,#loginPanel{display:none!important}body{background:white}.card{box-shadow:none;border:0;padding:0}main{margin:0;max-width:none}#printReport{border:0!important}}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>Student Registration System</h1><p>Intifaac Private School · War-idad Secondary School</p></div>
+  <div class="actions no-print" style="margin:0">
+    <button id="installBtn" class="secondary hidden" type="button">Install App</button>
+    <button id="logoutBtn" class="secondary hidden" type="button">Log out</button>
+  </div>
+</header>
+<main>
+<section id="loginPanel" class="card login">
+  <h2>Admin Login</h2>
+  <p style="color:var(--muted);font-size:14px">Sign in with the administrator email and password.</p>
+  <label for="email">Email</label><input id="email" type="email" autocomplete="username" value="intifaacschools6@gmail.com">
+  <label for="password">Password</label><input id="password" type="password" autocomplete="current-password" placeholder="Admin password">
+  <div class="actions"><button id="loginBtn" type="button">Log in</button></div><div id="loginStatus" class="status" role="status"></div>
+</section>
+
+<section id="appPanel" class="hidden">
+  <div class="card">
+    <h2>📊 School Dashboard</h2>
+    <div class="dashboard-grid">
+      <div class="card stat-card"><h3>Intifaac Private School</h3><h1 id="intifaacCount">0</h1><p>Registered Students</p></div>
+      <div class="card stat-card"><h3>War-idad Secondary School</h3><h1 id="waridadCount">0</h1><p>Registered Students</p></div>
+      <div class="card stat-card"><h3>Total Students</h3><h1 id="totalCount">0</h1><p>Both Schools</p></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="topline">
+      <div><h2>Register a Student</h2><span class="badge">Admin portal</span></div>
+      <div class="no-print" style="min-width:230px"><label for="school" style="margin-top:0">Select school</label><select id="school"><option>Intifaac Private School</option><option>War-idad Secondary School</option></select></div>
+    </div>
+    <form id="studentForm">
+      <input id="studentId" type="hidden">
+      <div class="row">
+        <div><label for="admission_no">Admission / Roll Number *</label><input id="admission_no" required></div>
+        <div><label for="full_name">Student full name *</label><input id="full_name" required></div>
+        <div><label for="gender">Gender</label><select id="gender"><option value="">Select</option><option>Male</option><option>Female</option></select></div>
+        <div><label for="date_of_birth">Date of birth</label><input id="date_of_birth" type="date"></div>
+        <div><label for="class">Class</label><input id="class" placeholder="e.g. Grade 7"></div>
+        <div><label for="parent_name">Parent / Guardian name</label><input id="parent_name"></div>
+        <div><label for="phone">Phone number</label><input id="phone" type="tel"></div>
+        <div><label for="address">Address</label><input id="address"></div>
+      </div>
+      <div class="actions"><button id="saveBtn" type="submit">Save student</button><button id="clearBtn" type="button" class="secondary">Clear form</button></div>
+      <div id="formStatus" class="status" role="status"></div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>📝 Exam Results</h2>
+    <label for="examType">Select Exam</label><select id="examType"></select>
+    <label for="examStudent">Select Student</label><select id="examStudent"><option value="">Select Student</option></select>
+    <div id="examSubjects" class="exam-grid"></div>
+    <button type="button" id="saveExamBtn">Save Exam Results</button>
+    <div id="examStatus" class="status" role="status"></div>
+  </div>
+
+  <div class="card">
+    <h2>📄 Exam Reports</h2>
+    <label for="reportStudent">Select Student</label><select id="reportStudent"><option value="">Select Student</option></select>
+    <label for="reportType">Select Report</label><select id="reportType"></select>
+    <button type="button" id="viewReportBtn">View Report</button>
+    <div id="reportOutput" style="margin-top:18px"></div>
+  </div>
+
+  <div class="card">
+    <h2>📱 WhatsApp Settings</h2>
+    <div class="row">
+      <div>
+        <h3>Intifaac Private School</h3>
+        <label for="intifaacWhatsApp">School WhatsApp Number</label><input id="intifaacWhatsApp" type="tel" placeholder="e.g. 252634000000">
+        <label><input type="checkbox" id="intifaacIncoming">Allow parents to contact school</label>
+        <label><input type="checkbox" id="intifaacOutgoing">Allow school to contact parents</label>
+        <button type="button" id="saveIntifaacWhatsApp">Save Intifaac Settings</button>
+        <div id="intifaacWhatsAppStatus" class="status" role="status"></div>
+      </div>
+      <div>
+        <h3>War-idad Secondary School</h3>
+        <label for="waridadWhatsApp">School WhatsApp Number</label><input id="waridadWhatsApp" type="tel" placeholder="e.g. 252634000000">
+        <label><input type="checkbox" id="waridadIncoming">Allow parents to contact school</label>
+        <label><input type="checkbox" id="waridadOutgoing">Allow school to contact parents</label>
+        <button type="button" id="saveWaridadWhatsApp">Save War-idad Settings</button>
+        <div id="waridadWhatsAppStatus" class="status" role="status"></div>
+      </div>
+    </div>
+    <hr style="border:0;border-top:1px solid var(--line);margin:22px 0">
+    <h3>Parent contact link</h3>
+    <label for="parentWhatsAppSchool">Select School</label>
+    <select id="parentWhatsAppSchool"><option>Intifaac Private School</option><option>War-idad Secondary School</option></select>
+    <button type="button" id="parentWhatsAppBtn">Contact School on WhatsApp</button>
+    <div id="parentWhatsAppStatus" class="status"></div>
+  </div>
+
+  <div class="card">
+    <div class="topline"><h2>Student List</h2><div class="no-print actions" style="margin:0"><input id="search" placeholder="Search name or roll number" style="width:240px"><button id="printBtn" class="secondary" type="button">Print list</button></div></div>
+    <p id="count" class="status"></p>
+    <div class="tablewrap"><table><thead><tr><th>Roll No.</th><th>Student name</th><th>Class</th><th>Gender</th><th>Parent</th><th>Phone</th><th class="no-print">Actions</th></tr></thead><tbody id="studentsBody"><tr><td colspan="7">No students yet.</td></tr></tbody></table></div>
+    <div id="listStatus" class="status" role="status"></div>
+  </div>
+</section>
+</main>
+<script>
+"use strict";
+const SUPABASE_URL = "https://vmexzbiejzbdcjmejbib.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_5k8gjy03LeEdx8wZgBXpmw_pztOp-OI";
+const $ = id => document.getElementById(id);
+let db = null;
+let students = [];
+let installPrompt = null;
+const SCHOOL_NAMES = ["Intifaac Private School", "War-idad Secondary School"];
+const examSubjects = {
+  "War-idad Secondary School": [
+    ["English",50],["Arabic",50],["Tarbiya",50],["Mathematics",100],["Somali",100],
+    ["Geography",100],["History",100],["Biology",100],["Chemistry",100],["Physics",100]
+  ],
+  "Intifaac Private School": [["English",100],["Arabic",100],["Mathematics",100]]
+};
+
+function status(id,message,bad=false){
+  const el=$(id); if(!el)return;
+  el.textContent=message; el.style.color=bad?"#a43b3b":"#667789";
+}
+function escapeHTML(value){
+  return String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+function normalizePhone(value){
+  let phone=String(value||"").replace(/\D/g,"");
+  if(phone.startsWith("0")) phone="252"+phone.slice(1);
+  else if(!phone.startsWith("252")) phone="252"+phone;
+  return phone;
+}
+function clearForm(){
+  $("studentForm").reset(); $("studentId").value="";
+  $("saveBtn").textContent="Save student"; status("formStatus","");
+}
+function updateExamTypes(){
+  const school=$("school").value;
+  const types=school==="War-idad Secondary School"
+    ? ["Term 1","Final Exam"] : ["Test 1","Test 2","Final Exam"];
+  $("examType").innerHTML=types.map(t=>`<option value="${escapeHTML(t)}">${escapeHTML(t)}</option>`).join("");
+}
+function updateReportTypes(){
+  const school=$("school").value;
+  const types=school==="War-idad Secondary School"
+    ? ["Term 1","Final Exam","General Report"]
+    : ["Test 1","Test 2","Final Exam","General Test Report","Year Report"];
+  $("reportType").innerHTML=types.map(t=>`<option value="${escapeHTML(t)}">${escapeHTML(t)}</option>`).join("");
+}
+function showExamSubjects(){
+  const subjects=examSubjects[$("school").value]||[];
+  $("examSubjects").innerHTML=subjects.map(([name,max])=>`
+    <div><label for="mark_${name}">${escapeHTML(name)} (${max} Marks)</label>
+    <input id="mark_${name}" type="number" class="examMark" data-subject="${escapeHTML(name)}" data-max="${max}" min="0" max="${max}" step="0.5" placeholder="Enter marks"></div>
+  `).join("");
+}
+function loadExamStudents(){
+  const options='<option value="">Select Student</option>'+students.map(s=>
+    `<option value="${escapeHTML(s.id)}">${escapeHTML(s.full_name)} (${escapeHTML(s.admission_no)})</option>`
+  ).join("");
+  $("examStudent").innerHTML=options;
+  $("reportStudent").innerHTML=options;
+}
+async function loadWhatsAppSettings(){
+  if(!db)return;
+  const {data,error}=await db.from("school_whatsapp_settings").select("*");
+  if(error){console.error("WhatsApp settings:",error);return;}
+  (data||[]).forEach(s=>{
+    if(s.school==="Intifaac Private School"){
+      $("intifaacWhatsApp").value=s.whatsapp_number||"";
+      $("intifaacIncoming").checked=!!s.incoming_enabled;
+      $("intifaacOutgoing").checked=!!s.outgoing_enabled;
+    }else if(s.school==="War-idad Secondary School"){
+      $("waridadWhatsApp").value=s.whatsapp_number||"";
+      $("waridadIncoming").checked=!!s.incoming_enabled;
+      $("waridadOutgoing").checked=!!s.outgoing_enabled;
+    }
+  });
+}
+async function saveWhatsAppSettings(school){
+  if(!db)return;
+  const isA=school==="Intifaac Private School";
+  const number=$(isA?"intifaacWhatsApp":"waridadWhatsApp").value.trim();
+  const incoming=$(isA?"intifaacIncoming":"waridadIncoming").checked;
+  const outgoing=$(isA?"intifaacOutgoing":"waridadOutgoing").checked;
+  const sid=isA?"intifaacWhatsAppStatus":"waridadWhatsAppStatus";
+  status(sid,"Saving...");
+  const {error}=await db.from("school_whatsapp_settings").upsert({
+    school,whatsapp_number:number,incoming_enabled:incoming,outgoing_enabled:outgoing,
+    updated_at:new Date().toISOString()
+  },{onConflict:"school"});
+  if(error){status(sid,error.message,true);return;}
+  status(sid,"Settings saved successfully!");
+}
+async function contactSchoolWhatsApp(){
+  if(!db){status("parentWhatsAppStatus","Please log in first.",true);return;}
+  const school=$("parentWhatsAppSchool").value;
+  const {data,error}=await db.from("school_whatsapp_settings").select("whatsapp_number,incoming_enabled").eq("school",school).maybeSingle();
+  if(error){status("parentWhatsAppStatus",error.message,true);return;}
+  if(!data||!data.incoming_enabled){status("parentWhatsAppStatus","School WhatsApp contact is currently OFF.",true);return;}
+  const phone=normalizePhone(data.whatsapp_number);
+  if(phone.length<9){status("parentWhatsAppStatus","School WhatsApp number is missing or incorrect.",true);return;}
+  const message=encodeURIComponent("Assalamu Alaikum. I would like to contact "+school+".");
+  window.open("https://wa.me/"+phone+"?text="+message,"_blank","noopener");
+}
+function showApp(){
+  $("loginPanel").classList.add("hidden");
+  $("appPanel").classList.remove("hidden");
+  $("logoutBtn").classList.remove("hidden");
+  loadStudents(); loadDashboard(); loadWhatsAppSettings();
+}
+async function start(){
+  if(!window.supabase){status("loginStatus","Supabase library could not load. Check your internet connection.",true);return;}
+  db=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+  const {data,error}=await db.auth.getSession();
+  if(error){status("loginStatus",error.message,true);return;}
+  if(data.session)showApp();
+  db.auth.onAuthStateChange((_event,session)=>{
+    if(session)showApp();
+    else{
+      $("appPanel").classList.add("hidden");$("logoutBtn").classList.add("hidden");
+      $("loginPanel").classList.remove("hidden");
+    }
+  });
+}
+$("loginBtn").addEventListener("click",async()=>{
+  if(!db){status("loginStatus","App is not connected to Supabase.",true);return;}
+  status("loginStatus","Signing in...");
+  $("loginBtn").disabled=true;
+  const {error}=await db.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});
+  $("loginBtn").disabled=false;
+  if(error)status("loginStatus",error.message,true);else status("loginStatus","");
+});
+$("logoutBtn").addEventListener("click",async()=>{if(db)await db.auth.signOut();});
+$("saveIntifaacWhatsApp").addEventListener("click",()=>saveWhatsAppSettings(SCHOOL_NAMES[0]));
+$("saveWaridadWhatsApp").addEventListener("click",()=>saveWhatsAppSettings(SCHOOL_NAMES[1]));
+$("parentWhatsAppBtn").addEventListener("click",contactSchoolWhatsApp);
+$("school").addEventListener("change",()=>{
+  clearForm(); loadStudents(); updateExamTypes(); updateReportTypes(); showExamSubjects();
+});
+$("search").addEventListener("input",renderStudents);
+$("clearBtn").addEventListener("click",clearForm);
+$("printBtn").addEventListener("click",()=>window.print());
+$("studentForm").addEventListener("submit",async e=>{
+  e.preventDefault(); if(!db)return;
+  const id=$("studentId").value;
+  const record={
+    school:$("school").value, admission_no:$("admission_no").value.trim(),
+    full_name:$("full_name").value.trim(), gender:$("gender").value||null,
+    date_of_birth:$("date_of_birth").value||null, class:$("class").value.trim()||null,
+    parent_name:$("parent_name").value.trim()||null, phone:$("phone").value.trim()||null,
+    address:$("address").value.trim()||null
+  };
+  $("saveBtn").disabled=true;status("formStatus","Saving...");
+  const result=id
+    ? await db.from("students").update(record).eq("id",id)
+    : await db.from("students").insert(record);
+  $("saveBtn").disabled=false;
+  if(result.error){status("formStatus",result.error.message,true);return;}
+  status("formStatus",id?"Student updated successfully.":"Student registered successfully.");
+  clearForm(); await loadStudents(); await loadDashboard();
+});
+async function loadStudents(){
+  if(!db)return;
+  status("listStatus","Loading students...");
+  const {data,error}=await db.from("students").select("*").eq("school",$("school").value).order("created_at",{ascending:false});
+  if(error){status("listStatus",error.message,true);return;}
+  students=data||[]; renderStudents(); loadExamStudents(); status("listStatus","");
+}
+function getGrade(percent){
+  if(percent>=90)return "A"; if(percent>=80)return "B"; if(percent>=70)return "C";
+  if(percent>=60)return "D"; return "F";
+}
+async function viewExamReport(){
+  const studentId=$("reportStudent").value, reportType=$("reportType").value;
+  if(!studentId){$("reportOutput").textContent="Please select a student.";return;}
+  let examTypes=[];
+  if(reportType==="General Report")examTypes=["Term 1","Final Exam"];
+  else if(reportType==="General Test Report")examTypes=["Test 1","Test 2"];
+  else if(reportType==="Year Report")examTypes=["Test 1","Test 2","Final Exam"];
+  else examTypes=[reportType];
+  $("reportOutput").textContent="Loading report...";
+  const {data,error}=await db.from("exam_results").select("*").eq("student_id",studentId).in("exam_type",examTypes);
+  if(error){$("reportOutput").textContent=error.message;return;}
+  if(!data||!data.length){$("reportOutput").textContent="No exam results found.";return;}
+  const subjects=[...new Set(data.map(x=>x.subject))];
+  let total=0,count=0,rows="";
+  subjects.forEach(subject=>{
+    const results=data.filter(x=>x.subject===subject);
+    const percentages=results.map(x=>Number(x.marks)/Number(x.max_marks)*100).filter(Number.isFinite);
+    if(!percentages.length)return;
+    const average=percentages.reduce((a,b)=>a+b,0)/percentages.length;
+    total+=average;count++;
+    rows+=`<tr><td>${escapeHTML(subject)}</td><td>${average.toFixed(1)}%</td><td>${getGrade(average)}</td></tr>`;
+  });
+  const overall=count?total/count:0;
+  const selectedStudent=students.find(s=>s.id===studentId);
+  const today=new Date().toLocaleDateString();
+  $("reportOutput").innerHTML=`
+    <div id="printReport" style="background:white;padding:25px;color:#222;border:2px solid #1d4265;border-radius:10px">
+      <div style="text-align:center;border-bottom:3px solid #1d4265;padding-bottom:15px">
+        <h2 style="color:#1d4265;margin:5px">${escapeHTML($("school").value)}</h2>
+        <h3>STUDENT EXAMINATION REPORT</h3><p>Academic Performance Report</p>
+      </div>
+      <div style="margin:20px 0;line-height:2">
+        <b>Student Name:</b> ${escapeHTML(selectedStudent?.full_name||"")}<br>
+        <b>Roll Number:</b> ${escapeHTML(selectedStudent?.admission_no||"")}<br>
+        <b>Class:</b> ${escapeHTML(selectedStudent?.class||"")}<br>
+        <b>Examination:</b> ${escapeHTML(reportType)}<br><b>Date:</b> ${today}
+      </div>
+      <table style="width:100%;border-collapse:collapse"><thead><tr style="background:#1d4265;color:white">
+        <th style="padding:10px">Subject</th><th>Average (%)</th><th>Grade</th>
+      </tr></thead><tbody>${rows}</tbody></table>
+      <div style="margin-top:20px;background:#eef3f8;padding:15px">
+        <h3>Overall Average: ${overall.toFixed(1)}%</h3><h3>Overall Grade: ${getGrade(overall)}</h3>
+        <h3>Result: ${overall>=60?"PASS":"FAIL"}</h3>
+      </div>
+      <div style="margin-top:50px;text-align:right"><p>Principal Signature: __________________</p></div>
+    </div>
+    <button type="button" class="no-print" id="printReportBtn">Print Report</button>`;
+  $("printReportBtn").addEventListener("click",()=>window.print());
+}
+$("viewReportBtn").addEventListener("click",viewExamReport);
+$("saveExamBtn").addEventListener("click",async()=>{
+  if(!db)return;
+  const studentId=$("examStudent").value, examType=$("examType").value;
+  const inputs=[...document.querySelectorAll(".examMark")];
+  if(!studentId){status("examStatus","Please select a student.",true);return;}
+  if(!inputs.length){status("examStatus","No subjects are available for this school.",true);return;}
+  for(const input of inputs){
+    if(input.value===""){status("examStatus","Enter all subject marks.",true);return;}
+    const marks=Number(input.value),max=Number(input.dataset.max);
+    if(!Number.isFinite(marks)||marks<0||marks>max){status("examStatus","Check the marks entered.",true);return;}
+  }
+  $("saveExamBtn").disabled=true;status("examStatus","Saving results...");
+  try{
+    for(const input of inputs){
+      const subject=input.dataset.subject,marks=Number(input.value),max=Number(input.dataset.max);
+      const {data:old,error:findError}=await db.from("exam_results").select("id")
+        .eq("student_id",studentId).eq("exam_type",examType).eq("subject",subject).maybeSingle();
+      if(findError)throw findError;
+      const result=old
+        ? await db.from("exam_results").update({marks,max_marks:max}).eq("id",old.id)
+        : await db.from("exam_results").insert({student_id:studentId,exam_type:examType,subject,marks,max_marks:max});
+      if(result.error)throw result.error;
+    }
+    status("examStatus","Exam results saved successfully!");
+  }catch(err){status("examStatus",err.message||"Could not save exam results.",true);}
+  finally{$("saveExamBtn").disabled=false;}
+});
+async function loadDashboard(){
+  if(!db)return;
+  const {data,error}=await db.from("students").select("school");
+  if(error){console.error(error);return;}
+  const all=data||[];
+  $("intifaacCount").textContent=all.filter(s=>s.school===SCHOOL_NAMES[0]).length;
+  $("waridadCount").textContent=all.filter(s=>s.school===SCHOOL_NAMES[1]).length;
+  $("totalCount").textContent=all.length;
+}
+function renderStudents(){
+  const q=$("search").value.trim().toLowerCase();
+  const filtered=students.filter(s=>(s.full_name||"").toLowerCase().includes(q)||(s.admission_no||"").toLowerCase().includes(q));
+  $("count").textContent=`${filtered.length} student(s) — ${$("school").value}`;
+  const body=$("studentsBody");body.innerHTML="";
+  if(!filtered.length){body.innerHTML='<tr><td colspan="7">No matching students found.</td></tr>';return;}
+  filtered.forEach(s=>{
+    const tr=document.createElement("tr");
+    [s.admission_no,s.full_name,s.class||"",s.gender||"",s.parent_name||"",s.phone||""].forEach(v=>{
+      const td=document.createElement("td");td.textContent=v??"";tr.appendChild(td);
+    });
+    const td=document.createElement("td");td.className="no-print";
+    const edit=document.createElement("button");edit.className="smallbtn secondary";edit.textContent="Edit";edit.onclick=()=>editStudent(s.id);
+    const del=document.createElement("button");del.className="smallbtn danger";del.textContent="Delete";del.onclick=()=>deleteStudent(s.id);
+    const wa=document.createElement("button");wa.className="smallbtn";wa.textContent="WhatsApp";wa.style.background="#25D366";
+    wa.onclick=()=>contactParent(s);
+    td.append(edit,del,wa);tr.appendChild(td);body.appendChild(tr);
+  });
+}
+async function contactParent(student){
+  const school=$("school").value;
+  const allowed=school===SCHOOL_NAMES[0]?$ ("intifaacOutgoing").checked:$("waridadOutgoing").checked;
+  if(!allowed){alert("Outgoing WhatsApp is OFF. Enable it in WhatsApp Settings.");return;}
+  const phone=normalizePhone(student.phone);
+  if(phone.length<9){alert("Student parent phone number is missing or incorrect.");return;}
+  const message=encodeURIComponent("Assalamu Alaikum. This is "+school+". We are contacting you regarding your child "+student.full_name+".");
+  window.open("https://wa.me/"+phone+"?text="+message,"_blank","noopener");
+}
+function editStudent(id){
+  const s=students.find(x=>x.id===id);if(!s)return;
+  $("studentId").value=s.id;
+  ["admission_no","full_name","gender","date_of_birth","class","parent_name","phone","address"].forEach(k=>$(k).value=s[k]||"");
+  $("saveBtn").textContent="Update student";status("formStatus","Editing "+s.full_name);
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+async function deleteStudent(id){
+  const s=students.find(x=>x.id===id);if(!s||!confirm("Delete "+s.full_name+"?"))return;
+  const {error}=await db.from("students").delete().eq("id",id);
+  if(error){status("listStatus",error.message,true);return;}
+  await loadStudents();await loadDashboard();
+}
+window.addEventListener("beforeinstallprompt",event=>{
+  event.preventDefault();installPrompt=event;$("installBtn").classList.remove("hidden");
+});
+$("installBtn").addEventListener("click",async()=>{
+  if(!installPrompt)return;
+  installPrompt.prompt();await installPrompt.userChoice;installPrompt=null;$("installBtn").classList.add("hidden");
+});
+if("serviceWorker" in navigator){
+  window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(err=>console.warn("Service worker:",err)));
+}
+updateExamTypes();updateReportTypes();showExamSubjects();start();
+</script>
+</body>
+</html>
