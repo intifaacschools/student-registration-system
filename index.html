@@ -182,8 +182,8 @@ function escapeHTML(value){
 }
 function normalizePhone(value){
   let phone=String(value||"").replace(/\D/g,"");
-  if(phone.loadstudents sWith("0")) phone="252"+phone.slice(1);
-  else if(!phone.loadstudents sWith("252")) phone="252"+phone;
+  if(phone.startsWith("0")) phone="252"+phone.slice(1);
+  else if(!phone.startsWith("252")) phone="252"+phone;
   return phone;
 }
 function clearForm(){
