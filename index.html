@@ -268,7 +268,7 @@ loadDashboard();
 loadWhatsAppSettings();
 loadAcademicYear();
 }
-async function loadStudents (){
+async function initializeSupabase (){
   if(!window.supabase){status("loginStatus","Supabase library could not load. Check your internet connection.",true);return;}
   db=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
   const {data,error}=await db.auth.getSession();
