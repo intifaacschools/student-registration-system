@@ -63,7 +63,21 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
       <div class="card stat-card"><h3>Total Students</h3><h1 id="totalCount">0</h1><p>Both Schools</p></div>
     </div>
   </div>
+  <div class="card">
+    <h2>📅 Academic Year Settings</h2>
 
+    <label for="yearSchool">Select School</label>
+    <select id="yearSchool">
+      <option value="Intifaac Private School">Intifaac Private School</option>
+      <option value="War-idad Secondary School">War-idad Secondary School</option>
+    </select>
+
+    <label for="academicYear">Academic Year</label>
+    <input id="academicYear" type="text" value="2026-27">
+
+    <button type="button" id="saveYearBtn">Save Academic Year</button>
+    <p id="yearStatus"></p>
+  </div>
   <div class="card">
     <div class="topline">
       <div><h2>Register a Student</h2><span class="badge">Admin portal</span></div>
@@ -168,8 +182,8 @@ function escapeHTML(value){
 }
 function normalizePhone(value){
   let phone=String(value||"").replace(/\D/g,"");
-  if(phone.startsWith("0")) phone="252"+phone.slice(1);
-  else if(!phone.startsWith("252")) phone="252"+phone;
+  if(phone.loadstudents sWith("0")) phone="252"+phone.slice(1);
+  else if(!phone.loadstudents sWith("252")) phone="252"+phone;
   return phone;
 }
 function clearForm(){
@@ -249,9 +263,12 @@ function showApp(){
   $("loginPanel").classList.add("hidden");
   $("appPanel").classList.remove("hidden");
   $("logoutBtn").classList.remove("hidden");
-  loadStudents(); loadDashboard(); loadWhatsAppSettings();
+ loadStudents();
+loadDashboard();
+loadWhatsAppSettings();
+loadAcademicYear();
 }
-async function start(){
+async function loadstudents (){
   if(!window.supabase){status("loginStatus","Supabase library could not load. Check your internet connection.",true);return;}
   db=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
   const {data,error}=await db.auth.getSession();
@@ -450,10 +467,63 @@ $("installBtn").addEventListener("click",async()=>{
   if(!installPrompt)return;
   installPrompt.prompt();await installPrompt.userChoice;installPrompt=null;$("installBtn").classList.add("hidden");
 });
+  async function loadAcademicYear(){
+  if(!db)return;
+
+  const school=$("yearSchool").value;
+  const {data,error}=await db
+    .from("school_settings")
+    .select("academic_year")
+    .eq("school",school)
+    .maybeSingle();
+
+  if(error){
+    status("yearStatus",error.message,true);
+    return;
+  }
+
+  if(data){
+    $("academicYear").value=data.academic_year;
+    status("yearStatus","Academic year loaded.");
+  }
+}
+
+async function saveAcademicYear(){
+  if(!db)return;
+
+  const school=$("yearSchool").value;
+  const year=$("academicYear").value.trim();
+
+  if(!/^\d{4}-\d{2}$/.test(year)){
+    status("yearStatus","Use format 2026-27.",true);
+    return;
+  }
+
+  $("saveYearBtn").disabled=true;
+
+  const {error}=await db
+    .from("school_settings")
+    .upsert(
+      {school:school,academic_year:year},
+      {onConflict:"school"}
+    );
+
+  $("saveYearBtn").disabled=false;
+
+  if(error){
+    status("yearStatus",error.message,true);
+    return;
+  }
+
+  status("yearStatus","Academic year saved successfully.");
+}
+
+$("yearSchool").addEventListener("change",loadAcademicYear);
+$("saveYearBtn").addEventListener("click",saveAcademicYear);
 if("serviceWorker" in navigator){
   window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(err=>console.warn("Service worker:",err)));
 }
-updateExamTypes();updateReportTypes();showExamSubjects();start();
+updateExamTypes();updateReportTypes();showExamSubjects();loadstudents ();
 </script>
 </body>
 </html>
