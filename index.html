@@ -72,7 +72,10 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
     <form id="studentForm">
       <input id="studentId" type="hidden">
       <div class="row">
-        <div><label for="admission_no">Admission / Roll Number *</label><input id="admission_no" required></div>
+        <div>
+  <label for="admission_no">Admission / Roll Number</label>
+  <input id="admission_no" readonly placeholder="Auto-generated">
+</div>
         <div><label for="full_name">Student full name *</label><input id="full_name" required></div>
         <div><label for="gender">Gender</label><select id="gender"><option value="">Select</option><option>Male</option><option>Female</option></select></div>
         <div><label for="date_of_birth">Date of birth</label><input id="date_of_birth" type="date"></div>
@@ -283,13 +286,16 @@ $("printBtn").addEventListener("click",()=>window.print());
 $("studentForm").addEventListener("submit",async e=>{
   e.preventDefault(); if(!db)return;
   const id=$("studentId").value;
-  const record={
-    school:$("school").value, admission_no:$("admission_no").value.trim(),
-    full_name:$("full_name").value.trim(), gender:$("gender").value||null,
-    date_of_birth:$("date_of_birth").value||null, class:$("class").value.trim()||null,
-    parent_name:$("parent_name").value.trim()||null, phone:$("phone").value.trim()||null,
-    address:$("address").value.trim()||null
-  };
+const record={
+  school:$("school").value,
+  full_name:$("full_name").value.trim(),
+  gender:$("gender").value||null,
+  date_of_birth:$("date_of_birth").value||null,
+  class:$("class").value.trim()||null,
+  parent_name:$("parent_name").value.trim()||null,
+  phone:$("phone").value.trim()||null,
+  address:$("address").value.trim()||null
+};
   $("saveBtn").disabled=true;status("formStatus","Saving...");
   const result=id
     ? await db.from("students").update(record).eq("id",id)
