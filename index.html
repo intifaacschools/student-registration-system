@@ -523,7 +523,7 @@ $("saveYearBtn").addEventListener("click",saveAcademicYear);
 if("serviceWorker" in navigator){
   window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(err=>console.warn("Service worker:",err)));
 }
-updateExamTypes();updateReportTypes();showExamSubjects();loadStudents ();
+updateExamTypes();updateReportTypes();showExamSubjects();initializeSupabase ();
 </script>
 </body>
 </html>
