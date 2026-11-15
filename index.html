@@ -1030,18 +1030,23 @@ const signatureUrl = new URL("abdiweli-signature.png", appAssets).href;
           <p>6. Any misuse of this card may result in disciplinary action.</p>
         </div>
 
-</div>
+        <div class="signature-area">
 
-</div>
-        
+          <div class="role">
+            PRINCIPAL SIGNATURE
+          </div>
 
-         <div class="role">
-  PRINCIPAL SIGNATURE__________  <img class="signature" src="abdiweli-signature.png.onthe.back id">
-</div>         <img class="stamp" src="${stampUrl}">
-              <img class="signature" src="${signatureUrl}">
+          <img class="signature" src="${signatureUrl}">
 
+          <img class="stamp" src="${stampUrl}">
 
         </div>
+
+        <div class="footer">
+          ${safe(schoolName)}
+        </div>
+
+      </div>
 
         <div class="footer">
           ${safe(schoolName)}
