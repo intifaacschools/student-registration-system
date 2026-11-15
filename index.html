@@ -652,7 +652,11 @@ async function showStudentIDCard(studentId){
   const title = isIntifaac
     ? "Principal"
     : "Designer & Lecturer";
+const appAssets = new URL("./", window.location.href).href;
 
+const logoUrl = new URL(logo, appAssets).href;
+const stampUrl = new URL(stamp, appAssets).href;
+const signatureUrl = new URL("abdiweli-signature.png", appAssets).href;
   const safe = v => String(v || "").replace(/[&<>"']/g,c=>({
     "&":"&amp;",
     "<":"&lt;",
@@ -956,7 +960,7 @@ async function showStudentIDCard(studentId){
       <div class="card blue">
 
         <div class="top">
-          <img class="logo" src="${logo}">
+         <img class="logo" src="${logoUrl}">
           <div class="school">${safe(schoolName)}</div>
         </div>
 
@@ -1016,8 +1020,21 @@ async function showStudentIDCard(studentId){
           <p>6. Any misuse of this card may result in disciplinary action.</p>
         </div>
 
-        <div class="signature-area">
+       <div class="signature-area">
 
+  <div class="manager">
+    Abdiweli Abdullahi
+  </div>
+
+  <div class="role">
+    ${safe(title)}
+  </div>
+
+  <img class="signature" src="${signatureUrl}">
+
+  <img class="stamp" src="${stampUrl}">
+
+</div>
           <img class="signature" src="abdiweli-signature.png">
 
           <div class="manager">
