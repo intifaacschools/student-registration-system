@@ -512,7 +512,14 @@ function renderStudents(){
     const del=document.createElement("button");del.className="smallbtn danger";del.textContent="Delete";del.onclick=()=>deleteStudent(s.id);
     const wa=document.createElement("button");wa.className="smallbtn";wa.textContent="WhatsApp";wa.style.background="#25D366";
     wa.onclick=()=>contactParent(s);
-    td.append(edit,del,wa);tr.appendChild(td);body.appendChild(tr);
+   const card=document.createElement("button");
+card.className="smallbtn";
+card.textContent="ID Card";
+card.style.background="#12304a";
+card.onclick=()=>showStudentIDCard(s.id);
+td.append(edit,del,wa,card);
+tr.appendChild(td);
+body.appendChild(tr);
   });
 }
 async function contactParent(student){
@@ -601,6 +608,82 @@ if("serviceWorker" in navigator){
   window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(err=>console.warn("Service worker:",err)));
 }
 updateExamTypes();updateReportTypes();showExamSubjects();initializeSupabase ();
+  async function showStudentIDCard(studentId){
+  const s=students.find(x=>String(x.id)===String(studentId));
+  if(!s){alert("Student not found.");return;}
+
+  const win=window.open("","_blank");
+  if(!win){alert("Please allow popups in your browser.");return;}
+
+  let photo="";
+  if(s.photo_path){
+    const {data,error}=await db.storage
+      .from("student-photos")
+      .createSignedUrl(s.photo_path,3600);
+    if(!error) photo=data.signedUrl;
+  }
+
+  const schoolName=s.school==="Intifaac Private School"
+    ? "Intifaac Private School"
+    : "War-idad Secondary School";
+
+  const logo=s.school==="Intifaac Private School"
+    ? "astaanta-INTIFAAC-bilaa-gadaal.png"
+    : "waridad-logo.png";
+
+  const safe=v=>String(v||"").replace(/[&<>"']/g,c=>({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[c]));
+
+  win.document.write(`
+  <!DOCTYPE html>
+  <html>
+  <head>
+  <title>Student ID Card</title>
+  <style>
+  body{font-family:Arial;text-align:center;padding:20px}
+  .card{width:340px;min-height:490px;margin:20px auto;
+  border:2px solid #12304a;border-radius:15px;overflow:hidden;
+  position:relative}
+  .header{background:#12304a;color:white;padding:15px}
+  .logo{width:65px;height:65px;object-fit:contain}
+  .photo{width:115px;height:125px;object-fit:cover;
+  border:2px solid #12304a;border-radius:8px;margin:15px}
+  .details{padding:5px 20px;text-align:left;line-height:2}
+  .footer{background:#12304a;color:white;padding:12px}
+  button{padding:10px 25px;background:#12304a;color:white;
+  border:0;border-radius:6px;cursor:pointer}
+  @media print{
+    button{display:none}
+    body{padding:0}
+    .card{margin:0 auto}
+  }
+  </style>
+  </head>
+  <body>
+  <div class="card">
+    <div class="header">
+      <img class="logo" src="${logo}">
+      <h3>${safe(schoolName)}</h3>
+      <b>STUDENT ID CARD</b>
+    </div>
+    ${photo?`<img class="photo" src="${photo}">`:
+    `<div class="photo">No Photo</div>`}
+    <div class="details">
+      <b>Full Name:</b> ${safe(s.full_name)}<br>
+      <b>Admission No:</b> ${safe(s.admission_no)}<br>
+      <b>Class:</b> ${safe(s.class)}<br>
+      <b>Gender:</b> ${safe(s.gender)}<br>
+      <b>Academic Year:</b> 2026–2027
+    </div>
+    <div class="footer">OFFICIAL STUDENT ID CARD</div>
+  </div>
+  <button onclick="window.print()">Print ID Card</button>
+  </body>
+  </html>
+  `);
+  win.document.close();
+}
 </script>
 </body>
 </html>
