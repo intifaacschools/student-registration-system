@@ -608,7 +608,7 @@ if("serviceWorker" in navigator){
   window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(err=>console.warn("Service worker:",err)));
 }
 updateExamTypes();updateReportTypes();showExamSubjects();initializeSupabase ();
-  async function showStudentIDCard(studentId){
+ async function showStudentIDCard(studentId){
   const s=students.find(x=>String(x.id)===String(studentId));
   if(!s){alert("Student not found.");return;}
 
@@ -639,49 +639,133 @@ updateExamTypes();updateReportTypes();showExamSubjects();initializeSupabase ();
   <!DOCTYPE html>
   <html>
   <head>
-  <title>Student ID Card</title>
+  <title>Student ID Card Designer</title>
   <style>
-  body{font-family:Arial;text-align:center;padding:20px}
-  .card{width:340px;min-height:490px;margin:20px auto;
-  border:2px solid #12304a;border-radius:15px;overflow:hidden;
-  position:relative}
-  .header{background:#12304a;color:white;padding:15px}
-  .logo{width:65px;height:65px;object-fit:contain}
-  .photo{width:115px;height:125px;object-fit:cover;
-  border:2px solid #12304a;border-radius:8px;margin:15px}
-  .details{padding:5px 20px;text-align:left;line-height:2}
-  .footer{background:#12304a;color:white;padding:12px}
-  button{padding:10px 25px;background:#12304a;color:white;
-  border:0;border-radius:6px;cursor:pointer}
-  @media print{
-    button{display:none}
-    body{padding:0}
-    .card{margin:0 auto}
-  }
+    body{
+      font-family:Arial,sans-serif;
+      background:#f1f4f8;
+      text-align:center;
+      padding:20px;
+    }
+    select,button{
+      padding:12px;
+      margin:8px;
+      border-radius:7px;
+      cursor:pointer;
+    }
+    .card{
+      width:500px;
+      height:300px;
+      margin:25px auto;
+      border-radius:15px;
+      overflow:hidden;
+      display:flex;
+      text-align:left;
+      position:relative;
+      box-shadow:0 5px 18px #999;
+      background:white;
+    }
+    .side{
+      width:35%;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      padding:10px;
+    }
+    .main{
+      width:65%;
+      padding:18px;
+    }
+    .logo{
+      width:75px;
+      height:75px;
+      object-fit:contain;
+      margin-bottom:8px;
+    }
+    .photo{
+      width:110px;
+      height:130px;
+      object-fit:cover;
+      border-radius:8px;
+      border:3px solid white;
+    }
+    .details{
+      line-height:2;
+      font-size:14px;
+    }
+    .school{
+      font-size:13px;
+      font-weight:bold;
+      text-align:center;
+    }
+    .blue .side{background:#12304a;color:white}
+    .blue .main{border-top:7px solid #12304a}
+    .white .side{background:#fff;color:#12304a}
+    .white .main{border-left:5px solid #ddd}
+    .white{border:2px solid #12304a}
+    .premium .side{background:#172b4d;color:#f5d27a}
+    .premium .main{
+      background:#fffaf0;
+      border-top:7px solid #c49a35;
+    }
+    .premium{border:3px solid #c49a35}
+    .footer{
+      position:absolute;
+      bottom:8px;
+      right:15px;
+      font-size:10px;
+      font-weight:bold;
+    }
+    @media print{
+      body{background:white;padding:0}
+      .controls{display:none}
+      .card{margin:0;box-shadow:none}
+    }
   </style>
   </head>
   <body>
-  <div class="card">
-    <div class="header">
-      <img class="logo" src="${logo}">
-      <h3>${safe(schoolName)}</h3>
-      <b>STUDENT ID CARD</b>
-    </div>
-    ${photo?`<img class="photo" src="${photo}">`:
-    `<div class="photo">No Photo</div>`}
-    <div class="details">
-      <b>Full Name:</b> ${safe(s.full_name)}<br>
-      <b>Admission No:</b> ${safe(s.admission_no)}<br>
-      <b>Class:</b> ${safe(s.class)}<br>
-      <b>Gender:</b> ${safe(s.gender)}<br>
-      <b>Academic Year:</b> 2026–2027
-    </div>
-    <div class="footer">OFFICIAL STUDENT ID CARD</div>
+
+  <div class="controls">
+    <h2>Choose Student ID Card Design</h2>
+    <select id="design" onchange="renderCard(this.value)">
+      <option value="blue">Design 1 - Professional Blue</option>
+      <option value="white">Design 2 - Modern White</option>
+      <option value="premium">Design 3 - Premium School</option>
+    </select>
+    <button onclick="window.print()">Print ID Card</button>
   </div>
-  <button onclick="window.print()">Print ID Card</button>
+
+  <div id="cardArea"></div>
+
+  <script>
+  function renderCard(design){
+    document.getElementById("cardArea").innerHTML =
+      '<div class="card '+design+'">' +
+        '<div class="side">' +
+          '<img class="logo" src="${logo}">' +
+          '<img class="photo" src="${photo}">' +
+          '<p class="school">${safe(schoolName)}</p>' +
+        '</div>' +
+        '<div class="main">' +
+          '<h3>STUDENT ID CARD</h3>' +
+          '<div class="details">' +
+            '<b>Full Name:</b> ${safe(s.full_name)}<br>' +
+            '<b>Admission No:</b> ${safe(s.admission_no)}<br>' +
+            '<b>Class:</b> ${safe(s.class)}<br>' +
+            '<b>Gender:</b> ${safe(s.gender)}<br>' +
+            '<b>Academic Year:</b> 2026–2027' +
+          '</div>' +
+          '<div class="footer">OFFICIAL STUDENT ID CARD</div>' +
+        '</div>' +
+      '</div>';
+  }
+  renderCard("blue");
+  <\/script>
   </body>
   </html>
   `);
+
   win.document.close();
 }
 </script>
