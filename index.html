@@ -400,15 +400,7 @@ $("studentForm").addEventListener("submit", async e => {
 
   $("saveBtn").disabled = false;
 });
-  $("saveBtn").disabled=true;status("formStatus","Saving...");
-  const result=id
-    ? await db.from("students").update(record).eq("id",id)
-    : await db.from("students").insert(record);
-  $("saveBtn").disabled=false;
-  if(result.error){status("formStatus",result.error.message,true);return;}
-  status("formStatus",id?"Student updated successfully.":"Student registered successfully.");
-  clearForm(); await loadStudents(); await loadDashboard();
-});
+ 
 async function loadStudents(){
   if(!db)return;
   status("listStatus","Loading students...");
