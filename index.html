@@ -325,7 +325,7 @@ const record={
 async function loadStudents(){
   if(!db)return;
   status("listStatus","Loading students...");
-  const {data,error}=await db.from("students").select("*").eq("school",$("school").value).order("created_at",{ascending:false});
+  const {data,error}=await db.from("students").select("*").eq("school",$("school").value).order("admission_no",{ascending:true});
   if(error){status("listStatus",error.message,true);return;}
   students=data||[]; renderStudents(); loadExamStudents(); status("listStatus","");
 }
