@@ -317,7 +317,6 @@ $("studentForm").addEventListener("submit", async e => {
   status("formStatus", "Saving...");
 
   try {
-    // Hubi sawirka
     if (file) {
       const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
 
@@ -330,7 +329,6 @@ $("studentForm").addEventListener("submit", async e => {
       }
     }
 
-    // Haddii arday hore loo diiwaangeliyey, ilaali sawirkiisii
     if (id) {
       const old = await db.from("students")
         .select("photo_path")
@@ -341,7 +339,6 @@ $("studentForm").addEventListener("submit", async e => {
       photoPath = old.data.photo_path;
     }
 
-    // Sawirka cusub geli Storage
     if (file) {
       const schoolFolder =
         $("school").value === "Intifaac Private School"
@@ -400,7 +397,8 @@ $("studentForm").addEventListener("submit", async e => {
 
   $("saveBtn").disabled = false;
 });
- 
+
+
 async function loadStudents(){
   if(!db)return;
   status("listStatus","Loading students...");
