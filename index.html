@@ -304,19 +304,102 @@ $("school").addEventListener("change",()=>{
 $("search").addEventListener("input",renderStudents);
 $("clearBtn").addEventListener("click",clearForm);
 $("printBtn").addEventListener("click",()=>window.print());
-$("studentForm").addEventListener("submit",async e=>{
-  e.preventDefault(); if(!db)return;
-  const id=$("studentId").value;
-const record={
-  school:$("school").value,
-  full_name:$("full_name").value.trim(),
-  gender:$("gender").value||null,
-  date_of_birth:$("date_of_birth").value||null,
-  class:$("class").value.trim()||null,
-  parent_name:$("parent_name").value.trim()||null,
-  phone:$("phone").value.trim()||null,
-  address:$("address").value.trim()||null
-};
+$("studentForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  if (!db) return;
+
+  const id = $("studentId").value;
+  const file = $("student_photo").files[0];
+  let photoPath = null;
+  let uploadedPath = null;
+
+  $("saveBtn").disabled = true;
+  status("formStatus", "Saving...");
+
+  try {
+    // Hubi sawirka
+    if (file) {
+      const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+
+      if (!allowedTypes.includes(file.type)) {
+        throw new Error("Choose JPG, PNG or WEBP photo.");
+      }
+
+      if (file.size > 2 * 1024 * 1024) {
+        throw new Error("Photo must not exceed 2 MB.");
+      }
+    }
+
+    // Haddii arday hore loo diiwaangeliyey, ilaali sawirkiisii
+    if (id) {
+      const old = await db.from("students")
+        .select("photo_path")
+        .eq("id", id)
+        .single();
+
+      if (old.error) throw old.error;
+      photoPath = old.data.photo_path;
+    }
+
+    // Sawirka cusub geli Storage
+    if (file) {
+      const schoolFolder =
+        $("school").value === "Intifaac Private School"
+          ? "intifaac"
+          : "waridad";
+
+      const extension = file.type.split("/")[1].replace("jpeg", "jpg");
+      uploadedPath = `${schoolFolder}/${crypto.randomUUID()}.${extension}`;
+
+      const upload = await db.storage
+        .from("student-photos")
+        .upload(uploadedPath, file, {
+          contentType: file.type,
+          upsert: false
+        });
+
+      if (upload.error) throw upload.error;
+      photoPath = uploadedPath;
+    }
+
+    const record = {
+      school: $("school").value,
+      full_name: $("full_name").value.trim(),
+      gender: $("gender").value || null,
+      date_of_birth: $("date_of_birth").value || null,
+      class: $("class").value.trim() || null,
+      parent_name: $("parent_name").value.trim() || null,
+      phone: $("phone").value.trim() || null,
+      address: $("address").value.trim() || null,
+      photo_path: photoPath
+    };
+
+    const result = id
+      ? await db.from("students").update(record).eq("id", id)
+      : await db.from("students").insert(record);
+
+    if (result.error) {
+      if (uploadedPath) {
+        await db.storage.from("student-photos").remove([uploadedPath]);
+      }
+      throw result.error;
+    }
+
+    status(
+      "formStatus",
+      id ? "Student updated successfully." : "Student registered successfully."
+    );
+
+    clearForm();
+    await loadStudents();
+    await loadDashboard();
+
+  } catch (error) {
+    status("formStatus", error.message, true);
+  }
+
+  $("saveBtn").disabled = false;
+});
   $("saveBtn").disabled=true;status("formStatus","Saving...");
   const result=id
     ? await db.from("students").update(record).eq("id",id)
