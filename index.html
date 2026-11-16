@@ -839,12 +839,25 @@ if (assetError) {
         text-align:center;
       }
 
-      .top{
-        height:105px;
-        background:#12304a;
-        color:white;
-        padding:10px;
-      }
+     .top{
+  height:105px;
+  background:#12304a;
+  color:white;
+  padding:10px;
+  position:relative;
+  z-index:1;
+}
+
+.top::after{
+  content:"";
+  position:absolute;
+  left:-5%;
+  bottom:-17px;
+  width:110%;
+  height:34px;
+  background:white;
+  border-radius:50%;
+}
 
       .logo{
         width:65px;
@@ -924,13 +937,26 @@ if (assetError) {
         font-weight:bold;
       }
 
-      .back-title{
-        background:#12304a;
-        color:white;
-        padding:18px 8px;
-        font-weight:800;
-        font-size:16px;
-      }
+     .back-title{
+  background:#12304a;
+  color:white;
+  padding:18px 8px 30px;
+  font-weight:800;
+  font-size:16px;
+  position:relative;
+  z-index:1;
+}
+
+.back-title::after{
+  content:"";
+  position:absolute;
+  left:-5%;
+  bottom:-17px;
+  width:110%;
+  height:34px;
+  background:white;
+  border-radius:50%;
+}
 
      .back-content{
   height:245px;
