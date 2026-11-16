@@ -153,7 +153,29 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
   </div>
 
   <div class="card">
-    <div class="topline"><h2>Student List</h2><div class="no-print actions" style="margin:0"><input id="search" placeholder="Search name or roll number" style="width:240px"><button id="printBtn" class="secondary" type="button">Print list</button></div></div>
+    <div class="topline"><h2>Student List</h2>
+      <div class="card">
+  <h2>✍️ ID Card Signature & Stamp Editor</h2>
+
+  <label for="assetSchool">Select School</label>
+  <select id="assetSchool">
+    <option>Intifaac Private School</option>
+    <option>War-idad Secondary School</option>
+  </select>
+
+  <label for="principalSignature">Principal Signature</label>
+  <input type="file" id="principalSignature" accept="image/png,image/jpeg,image/webp">
+
+  <label for="schoolStamp">School Stamp</label>
+  <input type="file" id="schoolStamp" accept="image/png,image/jpeg,image/webp">
+
+  <button type="button" id="saveSchoolAssets">
+    Save Signature & Stamp
+  </button>
+
+  <div id="schoolAssetsStatus" class="status" role="status"></div>
+</div>
+      <div class="no-print actions" style="margin:0"><input id="search" placeholder="Search name or roll number" style="width:240px"><button id="printBtn" class="secondary" type="button">Print list</button></div></div>
     <p id="count" class="status"></p>
     <div class="tablewrap"><table><thead><tr><th>Roll No.</th><th>Student name</th><th>Class</th><th>Gender</th><th>Parent</th><th>Phone</th><th class="no-print">Actions</th></tr></thead><tbody id="studentsBody"><tr><td colspan="7">No students yet.</td></tr></tbody></table></div>
     <div id="listStatus" class="status" role="status"></div>
@@ -297,6 +319,61 @@ $("loginBtn").addEventListener("click",async()=>{
 $("logoutBtn").addEventListener("click",async()=>{if(db)await db.auth.signOut();});
 $("saveIntifaacWhatsApp").addEventListener("click",()=>saveWhatsAppSettings(SCHOOL_NAMES[0]));
 $("saveWaridadWhatsApp").addEventListener("click",()=>saveWhatsAppSettings(SCHOOL_NAMES[1]));
+  $("saveSchoolAssets").addEventListener("click", async () => {
+  if (!db) return;
+
+  const school = $("assetSchool").value;
+  const folder = school === SCHOOL_NAMES[0] ? "intifaac" : "waridad";
+
+  const signature = $("principalSignature").files[0];
+  const stamp = $("schoolStamp").files[0];
+
+  const statusBox = $("schoolAssetsStatus");
+  const files = [
+    { file: signature, name: "principal-signature" },
+    { file: stamp, name: "school-stamp" }
+  ];
+
+  try {
+    statusBox.textContent = "Saving...";
+
+    if (!signature && !stamp) {
+      throw new Error("Please select a signature or stamp image.");
+    }
+
+    for (const item of files) {
+      if (!item.file) continue;
+
+      if (!["image/png", "image/jpeg", "image/webp"].includes(item.file.type)) {
+        throw new Error("Use PNG, JPG or WEBP images only.");
+      }
+
+      if (item.file.size > 2 * 1024 * 1024) {
+        throw new Error("Each image must not exceed 2 MB.");
+      }
+
+      const extension = item.file.type.split("/")[1].replace("jpeg", "jpg");
+      const path = `${folder}/${item.name}.${extension}`;
+
+      const result = await db.storage
+        .from("school-assets")
+        .upload(path, item.file, {
+          upsert: true,
+          contentType: item.file.type
+        });
+
+      if (result.error) throw result.error;
+    }
+
+    statusBox.textContent = "Signature and stamp saved successfully.";
+
+    $("principalSignature").value = "";
+    $("schoolStamp").value = "";
+
+  } catch (error) {
+    statusBox.textContent = error.message;
+  }
+});
 $("parentWhatsAppBtn").addEventListener("click",contactSchoolWhatsApp);
 $("school").addEventListener("change",()=>{
   clearForm(); loadStudents(); updateExamTypes(); updateReportTypes(); showExamSubjects();
@@ -655,8 +732,43 @@ async function showStudentIDCard(studentId){
 const appAssets = new URL("./", window.location.href).href;
 
 const logoUrl = new URL(logo, appAssets).href;
-const stampUrl = new URL(stamp, appAssets).href;
-const signatureUrl = new URL("abdiweli-signature.png", appAssets).href;
+
+let stampUrl = new URL(stamp, appAssets).href;
+let signatureUrl = new URL("abdiweli-signature.png", appAssets).href;
+
+const assetFolder = isIntifaac ? "intifaac" : "waridad";
+
+const { data: assetFiles, error: assetError } = await db.storage
+  .from("school-assets")
+  .list(assetFolder);
+
+if (assetError) {
+  console.error("School assets error:", assetError.message);
+} else {
+  const savedStamp = assetFiles.find(f =>
+    f.name.startsWith("school-stamp.")
+  );
+
+  const savedSignature = assetFiles.find(f =>
+    f.name.startsWith("principal-signature.")
+  );
+
+  if (savedStamp) {
+    const { data } = await db.storage
+      .from("school-assets")
+      .createSignedUrl(`${assetFolder}/${savedStamp.name}`, 3600);
+
+    if (data) stampUrl = data.signedUrl;
+  }
+
+  if (savedSignature) {
+    const { data } = await db.storage
+      .from("school-assets")
+      .createSignedUrl(`${assetFolder}/${savedSignature.name}`, 3600);
+
+    if (data) signatureUrl = data.signedUrl;
+  }
+}
   const safe = v => String(v || "").replace(/[&<>"']/g,c=>({
     "&":"&amp;",
     "<":"&lt;",
@@ -839,43 +951,48 @@ const signatureUrl = new URL("abdiweli-signature.png", appAssets).href;
         margin:5px 0 10px;
       }
 
-     .signature-area{
+    .signature-area{
   position:absolute;
-  bottom:43px;
+  bottom:35px;
   left:0;
   width:100%;
   display:flex;
-  flex-direction:row;
+  flex-wrap:wrap;
   align-items:center;
   justify-content:center;
-  gap:0;
+  column-gap:0;
+  row-gap:0;
+}
+
+.signature-area .role{
+  flex:0 0 100%;
+  text-align:center;
+  margin:0;
+  font-size:11px;
+  color:#e68b25;
+  font-weight:700;
 }
 
 .signature{
   width:105px;
   height:45px;
   object-fit:contain;
+  margin:0;
 }
 
-      .stamp{
-        width:65px;
-        height:65px;
-        object-fit:contain;
-        margin:2px auto;
-        display:block;
-      }
+.stamp{
+  width:65px;
+  height:65px;
+  object-fit:contain;
+  margin:0;
+  display:block;
+}
 
-      .manager{
-        font-family:'Montserrat',Arial,sans-serif;
-        font-weight:700;
-        font-size:12px;
-      }
-
-      .role{
-        font-size:11px;
-        color:#e68b25;
-        font-weight:700;
-      }
+.manager{
+  font-family:'Montserrat',Arial,sans-serif;
+  font-weight:700;
+  font-size:12px;
+}
 
       .blue .top,
       .blue .footer,
@@ -1008,54 +1125,40 @@ const signatureUrl = new URL("abdiweli-signature.png", appAssets).href;
 
       </div>
 
-      <div class="card blue">
+     <div class="card blue">
 
-        <div class="back-title">
-          TERMS & CONDITIONS
-        </div>
+  <div class="back-title">
+    TERMS & CONDITIONS
+  </div>
 
-        <div class="back-content">
-          <h4>IMPORTANT INFORMATION</h4>
+  <div class="back-content">
+    <h4>IMPORTANT INFORMATION</h4>
 
-          <p>1. This card is the official property of ${safe(schoolName)}.</p>
+    <p>1. This card is the official property of ${safe(schoolName)}.</p>
+    <p>2. The student must carry this card while attending school.</p>
+    <p>3. This card must not be transferred to another student.</p>
+    <p>4. If lost, please report it to the school administration.</p>
+    <p>5. The card must be returned when requested by the school.</p>
+    <p>6. Any misuse of this card may result in disciplinary action.</p>
+  </div>
 
-          <p>2. The student must carry this card while attending school.</p>
+  <div class="signature-area">
 
-          <p>3. This card must not be transferred to another student.</p>
+    <div class="role">PRINCIPAL SIGNATURE</div>
 
-          <p>4. If lost, please report it to the school administration.</p>
+    <img class="signature" src="${signatureUrl}">
 
-          <p>5. The card must be returned when requested by the school.</p>
+    <img class="stamp" src="${stampUrl}">
 
-          <p>6. Any misuse of this card may result in disciplinary action.</p>
-        </div>
+  </div>
 
-        <div class="signature-area">
+  <div class="footer">
+    ${safe(schoolName)}
+  </div>
 
-          <div class="role">
-            PRINCIPAL SIGNATURE
-          </div>
+</div>
 
-          <img class="signature" src="${signatureUrl}">
-
-          <img class="stamp" src="${stampUrl}">
-
-        </div>
-
-        <div class="footer">
-          ${safe(schoolName)}
-        </div>
-
-      </div>
-
-        <div class="footer">
-          ${safe(schoolName)}
-        </div>
-
-      </div>
-
-    </div>
-
+</div>
     <script>
       function changeDesign(design){
         document.querySelectorAll(".card").forEach(card=>{
