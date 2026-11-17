@@ -784,7 +784,7 @@ if (assetError) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Student ID Card</title>
-
+<script src="https://cdn.jsdelivr.net/npm/html-docx-js@0.3.1/dist/html-docx.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <style>
@@ -1196,15 +1196,86 @@ padding:18px 8px 40px;
 </div>
 
 </div>
-      async function downloadWord(){
-        alert("Word export is being prepared.");
-      }
+     
     <script>
       function changeDesign(design){
         document.querySelectorAll(".card").forEach(card=>{
           card.classList.remove("blue","white","premium");
           card.classList.add(design);
         });
+      }
+            async function downloadWord(){
+        try {
+          if(!window.htmlDocx){
+            alert("Word library is not loaded. Please refresh and try again.");
+            return;
+          }
+
+          const cards = document.querySelector(".cards");
+
+          if(!cards){
+            alert("ID Cards not found.");
+            return;
+          }
+
+          const copy = cards.cloneNode(true);
+
+          const images = copy.querySelectorAll("img");
+
+          for(const img of images){
+            try {
+              const response = await fetch(img.src);
+              const blob = await response.blob();
+
+              img.src = await new Promise((resolve, reject)=>{
+                const reader = new FileReader();
+                reader.onload = ()=>resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+              });
+            } catch(error){
+              console.log("Image could not be embedded:", error);
+            }
+          }
+
+          const styles = Array.from(
+            document.querySelectorAll("style")
+          ).map(style=>style.innerHTML).join("\n");
+
+          const html = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="UTF-8">
+              <style>
+                ${styles}
+                body { font-family: Arial, sans-serif; }
+                .cards { display: table; }
+                .card {
+                  display: table-cell;
+                  vertical-align: top;
+                }
+              </style>
+            </head>
+            <body>
+              ${copy.outerHTML}
+            </body>
+            </html>
+          `;
+
+          const blob = window.htmlDocx.asBlob(html);
+          const url = URL.createObjectURL(blob);
+
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = "Student-ID-Card.docx";
+          link.click();
+
+          setTimeout(()=>URL.revokeObjectURL(url), 3000);
+
+        } catch(error){
+          alert("Word download failed: " + error.message);
+        }
       }
     <\/script>
 
