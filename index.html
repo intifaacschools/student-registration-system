@@ -872,12 +872,14 @@ if (assetError) {
       }
 
       .school{
-        font-size:14px;
-        font-weight:800;
-        margin:4px 0;
-        position:relative;
-         z-index:2;
-      }
+  font-size:14px;
+  font-weight:800;
+  color:#12304a;
+  text-align:center;
+  position:relative;
+  z-index:2;
+  margin:-18px 0 12px;
+}
 
      .heading{
   color:#e68b25;
@@ -1122,12 +1124,13 @@ padding:18px 8px 40px;
 
       <div class="card blue">
 
-        <div class="top">
-         <img class="logo" src="${logoUrl}">
-          <div class="school">${safe(schoolName)}</div>
-        </div>
+       <div class="top">
+  <img class="logo" src="${logoUrl}">
+</div>
 
-        <div class="heading">STUDENT ID CARD</div>
+<div class="school">${safe(schoolName)}</div>
+
+<div class="heading">STUDENT ID CARD</div>
 
         ${photo
           ? `<img class="photo" src="${photo}">`
