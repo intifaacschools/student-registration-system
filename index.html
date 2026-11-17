@@ -1204,10 +1204,10 @@ padding:18px 8px 40px;
           card.classList.add(design);
         });
       }
-            async function downloadWord(){
+                async function downloadWord(){
         try {
           if(!window.htmlDocx){
-            alert("Word library is not loaded. Please refresh and try again.");
+            alert("Word library is not loaded. Please refresh.");
             return;
           }
 
@@ -1219,7 +1219,6 @@ padding:18px 8px 40px;
           }
 
           const copy = cards.cloneNode(true);
-
           const images = copy.querySelectorAll("img");
 
           for(const img of images){
@@ -1234,7 +1233,7 @@ padding:18px 8px 40px;
                 reader.readAsDataURL(blob);
               });
             } catch(error){
-              console.log("Image could not be embedded:", error);
+              console.log(error);
             }
           }
 
@@ -1242,26 +1241,69 @@ padding:18px 8px 40px;
             document.querySelectorAll("style")
           ).map(style=>style.innerHTML).join("\n");
 
-          const html = `
-            <!DOCTYPE html>
-            <html>
-            <head>
-              <meta charset="UTF-8">
-              <style>
-                ${styles}
-                body { font-family: Arial, sans-serif; }
-                .cards { display: table; }
-                .card {
-                  display: table-cell;
-                  vertical-align: top;
-                }
-              </style>
-            </head>
-            <body>
-              ${copy.outerHTML}
-            </body>
-            </html>
-          `;
+          const html =
+            '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>' +
+            styles +
+            '</style></head><body>' +
+            copy.outerHTML +
+            '</body></html>';
+
+          const blob = window.htmlDocx.asBlob(html);
+          const url = URL.createObjectURL(blob);
+
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = "Student-ID-Card.docx";
+          link.click();
+
+          setTimeout(()=>URL.revokeObjectURL(url), 3000);
+
+        } catch(error){
+          alert("Word download failed: " + error.message);
+        }
+      }      async function downloadWord(){
+        try {
+          if(!window.htmlDocx){
+            alert("Word library is not loaded. Please refresh.");
+            return;
+          }
+
+          const cards = document.querySelector(".cards");
+
+          if(!cards){
+            alert("ID Cards not found.");
+            return;
+          }
+
+          const copy = cards.cloneNode(true);
+          const images = copy.querySelectorAll("img");
+
+          for(const img of images){
+            try {
+              const response = await fetch(img.src);
+              const blob = await response.blob();
+
+              img.src = await new Promise((resolve, reject)=>{
+                const reader = new FileReader();
+                reader.onload = ()=>resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+              });
+            } catch(error){
+              console.log(error);
+            }
+          }
+
+          const styles = Array.from(
+            document.querySelectorAll("style")
+          ).map(style=>style.innerHTML).join("\n");
+
+          const html =
+            '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>' +
+            styles +
+            '</style></head><body>' +
+            copy.outerHTML +
+            '</body></html>';
 
           const blob = window.htmlDocx.asBlob(html);
           const url = URL.createObjectURL(blob);
