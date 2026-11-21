@@ -7,7 +7,7 @@
 <meta name="description" content="Student Registration System for Intifaac Private School and War-idad Secondary School.">
 <link rel="manifest" href="manifest.json">
 <title>Student Registration System</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./offline-db.js"></script>
 <style>
 :root{--navy:#12304a;--blue:#176b87;--mint:#e8f5f2;--bg:#f3f6f9;--ink:#1d2935;--muted:#667789;--line:#dce4ea}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:Arial,sans-serif;color:var(--ink)}
@@ -42,6 +42,9 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
   <div><h1>Student Registration System</h1><p>Intifaac Private School · War-idad Secondary School</p></div>
   <div class="actions no-print" style="margin:0">
     <button id="installBtn" class="secondary hidden" type="button">Install App</button>
+    <span id="connectionBadge" class="badge">Connecting…</span>
+    <button id="cacheOfflineBtn" class="secondary hidden" type="button">Save data for offline</button>
+    <button id="syncBtn" class="secondary hidden" type="button">Sync now</button>
     <button id="logoutBtn" class="secondary hidden" type="button">Log out</button>
   </div>
 </header>
@@ -51,11 +54,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
   <p style="color:var(--muted);font-size:14px">Sign in with the administrator email and password.</p>
   <label for="email">Email</label><input id="email" type="email" autocomplete="username" value="intifaacschools6@gmail.com">
   <label for="password">Password</label><input id="password" type="password" autocomplete="current-password" placeholder="Admin password">
-  <div class="actions"><button id="loginBtn" type="button">Log in</button></div> <div class="actions" style="margin-top:12px">
-<a href="https://script.google.com/macros/s/AKfycbzjjAOZHtA1vml_0uAapzUyAHJ6y45wZNTK_mpPNfynaImtT0pyZIQyp-XhHQ9E8eVV/exec" target="_blank" rel="noopener" style="display:inline-block;background:var(--blue);color:white;text-decoration:none;font-weight:700;padding:11px 16px;border-radius:8px">
-ONLINE EXAMINATION
-</a>
-</div>   <div id="loginStatus" class="status" role="status"></div>
+  <div class="actions"><button id="loginBtn" type="button">Log in</button></div><div id="loginStatus" class="status" role="status"></div>
 </section>
 
 <section id="appPanel" class="hidden">
@@ -67,21 +66,7 @@ ONLINE EXAMINATION
       <div class="card stat-card"><h3>Total Students</h3><h1 id="totalCount">0</h1><p>Both Schools</p></div>
     </div>
   </div>
-  <div class="card">
-    <h2>📅 Academic Year Settings</h2>
 
-    <label for="yearSchool">Select School</label>
-    <select id="yearSchool">
-      <option value="Intifaac Private School">Intifaac Private School</option>
-      <option value="War-idad Secondary School">War-idad Secondary School</option>
-    </select>
-
-    <label for="academicYear">Academic Year</label>
-    <input id="academicYear" type="text" value="2026-27">
-
-    <button type="button" id="saveYearBtn">Save Academic Year</button>
-    <p id="yearStatus"></p>
-  </div>
   <div class="card">
     <div class="topline">
       <div><h2>Register a Student</h2><span class="badge">Admin portal</span></div>
@@ -90,10 +75,7 @@ ONLINE EXAMINATION
     <form id="studentForm">
       <input id="studentId" type="hidden">
       <div class="row">
-        <div>
-  <label for="admission_no">Admission / Roll Number</label>
-  <input id="admission_no" readonly placeholder="Auto-generated">
-</div>
+        <div><label for="admission_no">Admission / Roll Number *</label><input id="admission_no" required></div>
         <div><label for="full_name">Student full name *</label><input id="full_name" required></div>
         <div><label for="gender">Gender</label><select id="gender"><option value="">Select</option><option>Male</option><option>Female</option></select></div>
         <div><label for="date_of_birth">Date of birth</label><input id="date_of_birth" type="date"></div>
@@ -101,10 +83,6 @@ ONLINE EXAMINATION
         <div><label for="parent_name">Parent / Guardian name</label><input id="parent_name"></div>
         <div><label for="phone">Phone number</label><input id="phone" type="tel"></div>
         <div><label for="address">Address</label><input id="address"></div>
-        <div>
-  <label for="student_photo">Student Photo</label>
-  <input id="student_photo" type="file" accept="image/jpeg,image/png,image/webp">
-</div>
       </div>
       <div class="actions"><button id="saveBtn" type="submit">Save student</button><button id="clearBtn" type="button" class="secondary">Clear form</button></div>
       <div id="formStatus" class="status" role="status"></div>
@@ -157,29 +135,7 @@ ONLINE EXAMINATION
   </div>
 
   <div class="card">
-    <div class="topline"><h2>Student List</h2>
-      <div class="card">
-  <h2>✍️ ID Card Signature & Stamp Editor</h2>
-
-  <label for="assetSchool">Select School</label>
-  <select id="assetSchool">
-    <option>Intifaac Private School</option>
-    <option>War-idad Secondary School</option>
-  </select>
-
-  <label for="principalSignature">Principal Signature</label>
-  <input type="file" id="principalSignature" accept="image/png,image/jpeg,image/webp">
-
-  <label for="schoolStamp">School Stamp</label>
-  <input type="file" id="schoolStamp" accept="image/png,image/jpeg,image/webp">
-
-  <button type="button" id="saveSchoolAssets">
-    Save Signature & Stamp
-  </button>
-
-  <div id="schoolAssetsStatus" class="status" role="status"></div>
-</div>
-      <div class="no-print actions" style="margin:0"><input id="search" placeholder="Search name or roll number" style="width:240px"><button id="printBtn" class="secondary" type="button">Print list</button></div></div>
+    <div class="topline"><h2>Student List</h2><div class="no-print actions" style="margin:0"><input id="search" placeholder="Search name or roll number" style="width:240px"><button id="printBtn" class="secondary" type="button">Print list</button></div></div>
     <p id="count" class="status"></p>
     <div class="tablewrap"><table><thead><tr><th>Roll No.</th><th>Student name</th><th>Class</th><th>Gender</th><th>Parent</th><th>Phone</th><th class="no-print">Actions</th></tr></thead><tbody id="studentsBody"><tr><td colspan="7">No students yet.</td></tr></tbody></table></div>
     <div id="listStatus" class="status" role="status"></div>
@@ -194,6 +150,10 @@ const $ = id => document.getElementById(id);
 let db = null;
 let students = [];
 let installPrompt = null;
+let currentOwner = null;
+let offlineMode = false;
+let syncing = false;
+const OFFLINE_OWNER_KEY = "intifaac_offline_owner_v1";
 const SCHOOL_NAMES = ["Intifaac Private School", "War-idad Secondary School"];
 const examSubjects = {
   "War-idad Secondary School": [
@@ -248,245 +208,196 @@ function loadExamStudents(){
   $("reportStudent").innerHTML=options;
 }
 async function loadWhatsAppSettings(){
-  if(!db)return;
-  const {data,error}=await db.from("school_whatsapp_settings").select("*");
-  if(error){console.error("WhatsApp settings:",error);return;}
+  const owner=currentOwner;if(!owner)return;
+  if(!offlineMode){
+    const {data,error}=await db.from("school_whatsapp_settings").select("*");
+    if(!error){await OfflineStore.putRows(owner,"school_whatsapp_settings","",data||[]);applyWhatsAppSettings(data||[]);return;}
+  }
+  const rows=await OfflineStore.getRows(owner,"school_whatsapp_settings","");
+  applyWhatsAppSettings(rows);
+}
+function applyWhatsAppSettings(data){
   (data||[]).forEach(s=>{
-    if(s.school==="Intifaac Private School"){
-      $("intifaacWhatsApp").value=s.whatsapp_number||"";
-      $("intifaacIncoming").checked=!!s.incoming_enabled;
-      $("intifaacOutgoing").checked=!!s.outgoing_enabled;
-    }else if(s.school==="War-idad Secondary School"){
-      $("waridadWhatsApp").value=s.whatsapp_number||"";
-      $("waridadIncoming").checked=!!s.incoming_enabled;
-      $("waridadOutgoing").checked=!!s.outgoing_enabled;
-    }
+    if(s.school===SCHOOL_NAMES[0]){$("intifaacWhatsApp").value=s.whatsapp_number||"";$("intifaacIncoming").checked=!!s.incoming_enabled;$("intifaacOutgoing").checked=!!s.outgoing_enabled;}
+    else if(s.school===SCHOOL_NAMES[1]){$("waridadWhatsApp").value=s.whatsapp_number||"";$("waridadIncoming").checked=!!s.incoming_enabled;$("waridadOutgoing").checked=!!s.outgoing_enabled;}
   });
 }
 async function saveWhatsAppSettings(school){
-  if(!db)return;
-  const isA=school==="Intifaac Private School";
-  const number=$(isA?"intifaacWhatsApp":"waridadWhatsApp").value.trim();
-  const incoming=$(isA?"intifaacIncoming":"waridadIncoming").checked;
-  const outgoing=$(isA?"intifaacOutgoing":"waridadOutgoing").checked;
+  if(!currentOwner)return;
+  const isA=school===SCHOOL_NAMES[0],number=$(isA?"intifaacWhatsApp":"waridadWhatsApp").value.trim();
+  const incoming=$(isA?"intifaacIncoming":"waridadIncoming").checked,outgoing=$(isA?"intifaacOutgoing":"waridadOutgoing").checked;
   const sid=isA?"intifaacWhatsAppStatus":"waridadWhatsAppStatus";
-  status(sid,"Saving...");
-  const {error}=await db.from("school_whatsapp_settings").upsert({
-    school,whatsapp_number:number,incoming_enabled:incoming,outgoing_enabled:outgoing,
-    updated_at:new Date().toISOString()
-  },{onConflict:"school"});
-  if(error){status(sid,error.message,true);return;}
+  const row={school,whatsapp_number:number,incoming_enabled:incoming,outgoing_enabled:outgoing,updated_at:new Date().toISOString()};
+  await OfflineStore.putRow(currentOwner,"school_whatsapp_settings","",row);
+  if(offlineMode){await OfflineStore.enqueue(currentOwner,"school_whatsapp_settings","","upsert",row);status(sid,"Saved on this device. Will sync when online.");return;}
+  const {error}=await db.from("school_whatsapp_settings").upsert(row,{onConflict:"school"});
+  if(error){await OfflineStore.enqueue(currentOwner,"school_whatsapp_settings","","upsert",row);status(sid,"Saved locally; sync pending: "+error.message,true);return;}
   status(sid,"Settings saved successfully!");
 }
 async function contactSchoolWhatsApp(){
-  if(!db){status("parentWhatsAppStatus","Please log in first.",true);return;}
   const school=$("parentWhatsAppSchool").value;
-  const {data,error}=await db.from("school_whatsapp_settings").select("whatsapp_number,incoming_enabled").eq("school",school).maybeSingle();
-  if(error){status("parentWhatsAppStatus",error.message,true);return;}
-  if(!data||!data.incoming_enabled){status("parentWhatsAppStatus","School WhatsApp contact is currently OFF.",true);return;}
-  const phone=normalizePhone(data.whatsapp_number);
-  if(phone.length<9){status("parentWhatsAppStatus","School WhatsApp number is missing or incorrect.",true);return;}
-  const message=encodeURIComponent("Assalamu Alaikum. I would like to contact "+school+".");
-  window.open("https://wa.me/"+phone+"?text="+message,"_blank","noopener");
+  const rows=await OfflineStore.getRows(currentOwner,"school_whatsapp_settings","");
+  const local=rows.find(x=>x.school===school);
+  let data=local;
+  if(!offlineMode){const res=await db.from("school_whatsapp_settings").select("whatsapp_number,incoming_enabled").eq("school",school).maybeSingle();if(!res.error)data=res.data||local;}
+  if(!data||!data.incoming_enabled){status("parentWhatsAppStatus","School WhatsApp contact is currently OFF or not cached.",true);return;}
+  const phone=normalizePhone(data.whatsapp_number);if(phone.length<9){status("parentWhatsAppStatus","School WhatsApp number is missing or incorrect.",true);return;}
+  window.open("https://wa.me/"+phone+"?text="+encodeURIComponent("Assalamu Alaikum. I would like to contact "+school+"."),"_blank","noopener");
 }
-function showApp(){
-  $("loginPanel").classList.add("hidden");
-  $("appPanel").classList.remove("hidden");
-  $("logoutBtn").classList.remove("hidden");
- loadStudents();
-loadDashboard();
-loadWhatsAppSettings();
-loadAcademicYear();
+function updateConnectionBadge(){
+  const el=$("connectionBadge");if(!el)return;
+  el.textContent=(navigator.onLine&&!offlineMode)?"Online":"Offline mode";
+  el.style.background=(navigator.onLine&&!offlineMode)?"#e8f5f2":"#fff2d8";
+  el.style.color=(navigator.onLine&&!offlineMode)?"#17624f":"#805400";
+  $("syncBtn").classList.toggle("hidden",!currentOwner);
+  $("cacheOfflineBtn").classList.toggle("hidden",!currentOwner || !navigator.onLine);
 }
-async function initializeSupabase (){
-  if(!window.supabase){status("loginStatus","Supabase library could not load. Check your internet connection.",true);return;}
-  db=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
-  const {data,error}=await db.auth.getSession();
-  if(error){status("loginStatus",error.message,true);return;}
-  if(data.session)showApp();
-  db.auth.onAuthStateChange((_event,session)=>{
-    if(session)showApp();
-    else{
-      $("appPanel").classList.add("hidden");$("logoutBtn").classList.add("hidden");
-      $("loginPanel").classList.remove("hidden");
-    }
-  });
+async function showApp(){
+  $("loginPanel").classList.add("hidden");$("appPanel").classList.remove("hidden");$("logoutBtn").classList.remove("hidden");
+  updateConnectionBadge();
+  await loadStudents();await loadDashboard();await loadWhatsAppSettings();await cacheExamResults();
 }
-$("loginBtn").addEventListener("click",async()=>{
-  if(!db){status("loginStatus","App is not connected to Supabase.",true);return;}
-  status("loginStatus","Signing in...");
-  $("loginBtn").disabled=true;
-  const {error}=await db.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});
-  $("loginBtn").disabled=false;
-  if(error)status("loginStatus",error.message,true);else status("loginStatus","");
-});
-$("logoutBtn").addEventListener("click",async()=>{if(db)await db.auth.signOut();});
-$("saveIntifaacWhatsApp").addEventListener("click",()=>saveWhatsAppSettings(SCHOOL_NAMES[0]));
-$("saveWaridadWhatsApp").addEventListener("click",()=>saveWhatsAppSettings(SCHOOL_NAMES[1]));
-  $("saveSchoolAssets").addEventListener("click", async () => {
-  if (!db) return;
-
-  const school = $("assetSchool").value;
-  const folder = school === SCHOOL_NAMES[0] ? "intifaac" : "waridad";
-
-  const signature = $("principalSignature").files[0];
-  const stamp = $("schoolStamp").files[0];
-
-  const statusBox = $("schoolAssetsStatus");
-  const files = [
-    { file: signature, name: "principal-signature" },
-    { file: stamp, name: "school-stamp" }
+async function loadSupabaseLibrary(){
+  if(window.supabase && typeof window.supabase.createClient === "function") return true;
+  const urls = [
+    "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2",
+    "https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"
   ];
-
-  try {
-    statusBox.textContent = "Saving...";
-
-    if (!signature && !stamp) {
-      throw new Error("Please select a signature or stamp image.");
-    }
-
-    for (const item of files) {
-      if (!item.file) continue;
-
-      if (!["image/png", "image/jpeg", "image/webp"].includes(item.file.type)) {
-        throw new Error("Use PNG, JPG or WEBP images only.");
-      }
-
-      if (item.file.size > 2 * 1024 * 1024) {
-        throw new Error("Each image must not exceed 2 MB.");
-      }
-
-      const extension = item.file.type.split("/")[1].replace("jpeg", "jpg");
-      const path = `${folder}/${item.name}.${extension}`;
-
-      const result = await db.storage
-        .from("school-assets")
-        .upload(path, item.file, {
-          upsert: true,
-          contentType: item.file.type
-        });
-
-      if (result.error) throw result.error;
-    }
-
-    statusBox.textContent = "Signature and stamp saved successfully.";
-
-    $("principalSignature").value = "";
-    $("schoolStamp").value = "";
-
-  } catch (error) {
-    statusBox.textContent = error.message;
+  for(const src of urls){
+    try{
+      await new Promise((resolve,reject)=>{
+        const script=document.createElement("script");
+        script.src=src; script.async=true;
+        script.onload=()=>resolve(); script.onerror=()=>reject(new Error("Could not load "+src));
+        document.head.appendChild(script);
+      });
+      if(window.supabase && typeof window.supabase.createClient === "function") return true;
+    }catch(err){ console.warn("Supabase CDN fallback:",err); }
   }
+  return false;
+}
+async function start(){
+  await OfflineStore.openDB();
+  if(window.supabase && typeof window.supabase.createClient === "function"){
+    db=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+    try{
+      const {data,error}=await db.auth.getSession();
+      if(!error&&data.session){currentOwner=data.session.user.id;localStorage.setItem(OFFLINE_OWNER_KEY,currentOwner);offlineMode=false;showApp();}
+      else if(!navigator.onLine){const saved=localStorage.getItem(OFFLINE_OWNER_KEY);if(saved){currentOwner=saved;offlineMode=true;showApp();status("loginStatus","Offline access: previously signed-in administrator.");}else status("loginStatus","First login needs an internet connection.",true);}
+      else if(error)status("loginStatus",error.message,true);
+    }catch(e){const saved=localStorage.getItem(OFFLINE_OWNER_KEY);if(!navigator.onLine&&saved){currentOwner=saved;offlineMode=true;showApp();}else status("loginStatus","Could not check sign-in. Connect to the internet.",true);}
+    db.auth.onAuthStateChange((_event,session)=>{
+      if(session){currentOwner=session.user.id;localStorage.setItem(OFFLINE_OWNER_KEY,currentOwner);offlineMode=false;showApp();if(navigator.onLine)syncPending();}
+      else{currentOwner=null;offlineMode=false;localStorage.removeItem(OFFLINE_OWNER_KEY);$("appPanel").classList.add("hidden");$("logoutBtn").classList.add("hidden");$("loginPanel").classList.remove("hidden");updateConnectionBadge();}
+    });
+  }else{
+    const saved=localStorage.getItem(OFFLINE_OWNER_KEY);
+    if(!navigator.onLine&&saved){currentOwner=saved;offlineMode=true;showApp();}
+    else status("loginStatus","Login requires internet on the first visit. Open the app online once to cache its files.",true);
+  }
+  updateConnectionBadge();
+}
+async function cacheAllOfflineData(){
+  if(!currentOwner||!db||!navigator.onLine){status("listStatus","Connect to the internet first to save offline data.",true);return;}
+  const btn=$("cacheOfflineBtn");btn.disabled=true;btn.textContent="Saving…";
+  try{
+    let total=0;
+    for(const school of SCHOOL_NAMES){
+      const {data,error}=await db.from("students").select("*").eq("school",school).order("created_at",{ascending:false});
+      if(error)throw error;
+      await OfflineStore.putRows(currentOwner,"students",school,data||[]);total+=(data||[]).length;
+    }
+    const {data:settings,error:settingsError}=await db.from("school_whatsapp_settings").select("*");
+    if(!settingsError)await OfflineStore.putRows(currentOwner,"school_whatsapp_settings","",settings||[]);
+    const {data:examRows,error:examError}=await db.from("exam_results").select("*");
+    if(!examError){
+      const schoolByStudent=new Map();
+      for(const school of SCHOOL_NAMES){const cached=await OfflineStore.getRows(currentOwner,"students",school);cached.forEach(st=>schoolByStudent.set(st.id,school));}
+      const grouped={};for(const row of (examRows||[])){const school=schoolByStudent.get(row.student_id);if(school)(grouped[school]||(grouped[school]=[])).push(row);}
+      for(const school of SCHOOL_NAMES)await OfflineStore.putRows(currentOwner,"exam_results",school,grouped[school]||[]);
+    }
+    const counts=[];
+    for(const school of SCHOOL_NAMES){const rows=await OfflineStore.getRows(currentOwner,"students",school);counts.push(school+": "+rows.length);}
+    await OfflineStore.setMeta("last_full_cache_"+currentOwner,Date.now());
+    status("listStatus","Offline copy saved successfully. "+counts.join(" | "));
+    await loadDashboard();await loadStudents();
+  }catch(e){status("listStatus","Offline save failed: "+(e.message||e),true);}
+  finally{btn.disabled=false;btn.textContent="Save data for offline";}
+}
+
+async function syncPending(){
+  if(syncing||!navigator.onLine||!db||!currentOwner||offlineMode)return;
+  syncing=true;status("listStatus","Syncing saved offline changes…");
+  try{
+    const queue=await OfflineStore.getQueue(currentOwner);
+    for(const item of queue){
+      let result;
+      if(item.table==="students"){
+        if(item.operation==="delete")result=await db.from("students").delete().eq("id",item.recordId);
+        else result=await db.from("students").upsert(item.row,{onConflict:"id"});
+      }else if(item.table==="exam_results"){
+        if(item.operation==="delete")result=await db.from("exam_results").delete().eq("id",item.recordId);
+        else result=await db.from("exam_results").upsert(item.row,{onConflict:"student_id,exam_type,subject"});
+      }else if(item.table==="school_whatsapp_settings")result=await db.from(item.table).upsert(item.row,{onConflict:"school"});
+      else if(item.table==="school_settings")result=await db.from(item.table).upsert(item.row,{onConflict:"school"});
+      if(result?.error)throw result.error;
+      await OfflineStore.deleteQueue(item.qid);
+    }
+    status("listStatus",queue.length?"Offline changes synchronized.":"");
+    await loadStudents();await loadDashboard();
+  }catch(e){status("listStatus","Sync paused; changes remain saved on this device: "+(e.message||e),true);}
+  finally{syncing=false;updateConnectionBadge();}
+}
+window.addEventListener("online",async()=>{
+  updateConnectionBadge();
+  if(db&&currentOwner){try{const {data}=await db.auth.getSession();if(data?.session){offlineMode=false;currentOwner=data.session.user.id;localStorage.setItem(OFFLINE_OWNER_KEY,currentOwner);showApp();await syncPending();}}catch(e){console.warn("Online reconnect:",e);}}
 });
-$("parentWhatsAppBtn").addEventListener("click",contactSchoolWhatsApp);
-$("school").addEventListener("change",()=>{
-  clearForm(); loadStudents(); updateExamTypes(); updateReportTypes(); showExamSubjects();
+window.addEventListener("offline",()=>{offlineMode=!!currentOwner;updateConnectionBadge();if(currentOwner){loadStudents();loadDashboard();}});
+$("syncBtn").addEventListener("click",syncPending);
+$("cacheOfflineBtn").addEventListener("click",cacheAllOfflineData);
+$("loginBtn").addEventListener("click",async()=>{
+  if(!db){status("loginStatus","First login needs internet. Please connect and reload.",true);return;}
+  if(!navigator.onLine){status("loginStatus","Login after logout requires internet.",true);return;}
+  status("loginStatus","Signing in…");$("loginBtn").disabled=true;
+  const {error}=await db.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});
+  $("loginBtn").disabled=false;if(error)status("loginStatus",error.message,true);else status("loginStatus","");
 });
+$("logoutBtn").addEventListener("click",async()=>{localStorage.removeItem(OFFLINE_OWNER_KEY);currentOwner=null;offlineMode=false;if(db)await db.auth.signOut();});
+
+// Student data is read from Supabase when online and from IndexedDB when offline.
+async function loadStudents(){
+  if(!currentOwner)return;
+  const school=$("school").value;let rows=null;
+  if(db&&navigator.onLine&&!offlineMode){
+    const res=await db.from("students").select("*").eq("school",school).order("created_at",{ascending:false});
+    if(!res.error){rows=res.data||[];await OfflineStore.putRows(currentOwner,"students",school,rows);}
+    else status("listStatus","Showing saved copy. Sync will retry: "+res.error.message,true);
+  }
+  if(!rows)rows=await OfflineStore.getRows(currentOwner,"students",school);
+  students=rows||[];renderStudents();loadExamStudents();
+}
+$("studentForm").addEventListener("submit",async e=>{
+  e.preventDefault();if(!currentOwner){status("formStatus","Please sign in first.",true);return;}
+  const id=$("studentId").value||crypto.randomUUID();
+  const record={id,school:$("school").value,admission_no:$("admission_no").value.trim(),full_name:$("full_name").value.trim(),
+    gender:$("gender").value||null,date_of_birth:$("date_of_birth").value||null,class:$("class").value.trim()||null,
+    parent_name:$("parent_name").value.trim()||null,phone:$("phone").value.trim()||null,address:$("address").value.trim()||null};
+  $("saveBtn").disabled=true;status("formStatus","Saving…");
+  await OfflineStore.putRow(currentOwner,"students",record.school,record);
+  let error=null;
+  if(db&&navigator.onLine&&!offlineMode){const res=await db.from("students").upsert(record,{onConflict:"id"});error=res.error;}
+  if(!db||!navigator.onLine||offlineMode||error){await OfflineStore.enqueue(currentOwner,"students",record.school,"upsert",record);status("formStatus",error?"Saved on this device; sync pending: "+error.message:"Saved offline. It will sync when internet returns.",!!error);}
+  else status("formStatus","Student saved successfully.");
+  $("saveBtn").disabled=false;clearForm();await loadStudents();await loadDashboard();
+});
+$("school").addEventListener("change",()=>{clearForm();loadStudents();updateExamTypes();updateReportTypes();showExamSubjects();});
 $("search").addEventListener("input",renderStudents);
 $("clearBtn").addEventListener("click",clearForm);
 $("printBtn").addEventListener("click",()=>window.print());
-$("studentForm").addEventListener("submit", async e => {
-  e.preventDefault();
-  if (!db) return;
+$("saveIntifaacWhatsApp").addEventListener("click",()=>saveWhatsAppSettings(SCHOOL_NAMES[0]));
+$("saveWaridadWhatsApp").addEventListener("click",()=>saveWhatsAppSettings(SCHOOL_NAMES[1]));
+$("parentWhatsAppBtn").addEventListener("click",contactSchoolWhatsApp);
 
-  const id = $("studentId").value;
-  const file = $("student_photo").files[0];
-  let photoPath = null;
-  let uploadedPath = null;
-
-  $("saveBtn").disabled = true;
-  status("formStatus", "Saving...");
-
-  try {
-    if (file) {
-      const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
-
-      if (!allowedTypes.includes(file.type)) {
-        throw new Error("Choose JPG, PNG or WEBP photo.");
-      }
-
-      if (file.size > 2 * 1024 * 1024) {
-        throw new Error("Photo must not exceed 2 MB.");
-      }
-    }
-
-    if (id) {
-      const old = await db.from("students")
-        .select("photo_path")
-        .eq("id", id)
-        .single();
-
-      if (old.error) throw old.error;
-      photoPath = old.data.photo_path;
-    }
-
-    if (file) {
-      const schoolFolder =
-        $("school").value === "Intifaac Private School"
-          ? "intifaac"
-          : "waridad";
-
-      const extension = file.type.split("/")[1].replace("jpeg", "jpg");
-      uploadedPath = `${schoolFolder}/${crypto.randomUUID()}.${extension}`;
-
-      const upload = await db.storage
-        .from("student-photos")
-        .upload(uploadedPath, file, {
-          contentType: file.type,
-          upsert: false
-        });
-
-      if (upload.error) throw upload.error;
-      photoPath = uploadedPath;
-    }
-
-    const record = {
-      school: $("school").value,
-      full_name: $("full_name").value.trim(),
-      gender: $("gender").value || null,
-      date_of_birth: $("date_of_birth").value || null,
-      class: $("class").value.trim() || null,
-      parent_name: $("parent_name").value.trim() || null,
-      phone: $("phone").value.trim() || null,
-      address: $("address").value.trim() || null,
-      photo_path: photoPath
-    };
-
-    const result = id
-      ? await db.from("students").update(record).eq("id", id)
-      : await db.from("students").insert(record);
-
-    if (result.error) {
-      if (uploadedPath) {
-        await db.storage.from("student-photos").remove([uploadedPath]);
-      }
-      throw result.error;
-    }
-
-    status(
-      "formStatus",
-      id ? "Student updated successfully." : "Student registered successfully."
-    );
-
-    clearForm();
-    await loadStudents();
-    await loadDashboard();
-
-  } catch (error) {
-    status("formStatus", error.message, true);
-  }
-
-  $("saveBtn").disabled = false;
-});
-
-
-async function loadStudents(){
-  if(!db)return;
-  status("listStatus","Loading students...");
-  const {data,error}=await db.from("students").select("*").eq("school",$("school").value).order("admission_no",{ascending:true});
-  if(error){status("listStatus",error.message,true);return;}
-  students=data||[]; renderStudents(); loadExamStudents(); status("listStatus","");
-}
 function getGrade(percent){
   if(percent>=90)return "A"; if(percent>=80)return "B"; if(percent>=70)return "C";
   if(percent>=60)return "D"; return "F";
@@ -500,8 +411,9 @@ async function viewExamReport(){
   else if(reportType==="Year Report")examTypes=["Test 1","Test 2","Final Exam"];
   else examTypes=[reportType];
   $("reportOutput").textContent="Loading report...";
-  const {data,error}=await db.from("exam_results").select("*").eq("student_id",studentId).in("exam_type",examTypes);
-  if(error){$("reportOutput").textContent=error.message;return;}
+  let data=null,error=null;
+  if(!offlineMode&&navigator.onLine){const res=await db.from("exam_results").select("*").eq("student_id",studentId).in("exam_type",examTypes);data=res.data;error=res.error;if(!error)await OfflineStore.putRows(currentOwner,"exam_results",$("school").value,data||[]);}
+  if(error||!data){data=(await OfflineStore.getRows(currentOwner,"exam_results",$("school").value)).filter(x=>x.student_id===studentId&&examTypes.includes(x.exam_type));}
   if(!data||!data.length){$("reportOutput").textContent="No exam results found.";return;}
   const subjects=[...new Set(data.map(x=>x.subject))];
   let total=0,count=0,rows="";
@@ -542,7 +454,7 @@ async function viewExamReport(){
 }
 $("viewReportBtn").addEventListener("click",viewExamReport);
 $("saveExamBtn").addEventListener("click",async()=>{
-  if(!db)return;
+  if(!currentOwner)return;
   const studentId=$("examStudent").value, examType=$("examType").value;
   const inputs=[...document.querySelectorAll(".examMark")];
   if(!studentId){status("examStatus","Please select a student.",true);return;}
@@ -554,28 +466,33 @@ $("saveExamBtn").addEventListener("click",async()=>{
   }
   $("saveExamBtn").disabled=true;status("examStatus","Saving results...");
   try{
+    const cached=await OfflineStore.getRows(currentOwner,"exam_results",$("school").value);
     for(const input of inputs){
       const subject=input.dataset.subject,marks=Number(input.value),max=Number(input.dataset.max);
-      const {data:old,error:findError}=await db.from("exam_results").select("id")
-        .eq("student_id",studentId).eq("exam_type",examType).eq("subject",subject).maybeSingle();
-      if(findError)throw findError;
-      const result=old
-        ? await db.from("exam_results").update({marks,max_marks:max}).eq("id",old.id)
-        : await db.from("exam_results").insert({student_id:studentId,exam_type:examType,subject,marks,max_marks:max});
-      if(result.error)throw result.error;
+      const old=cached.find(x=>x.student_id===studentId&&x.exam_type===examType&&x.subject===subject);
+      const row={id:old?.id||crypto.randomUUID(),student_id:studentId,exam_type:examType,subject,marks,max_marks:max};
+      await OfflineStore.putRow(currentOwner,"exam_results",$("school").value,row);
+      if(offlineMode)await OfflineStore.enqueue(currentOwner,"exam_results",$("school").value,"upsert",row);
+      else{const result=await db.from("exam_results").upsert(row,{onConflict:"student_id,exam_type,subject"});if(result.error){await OfflineStore.enqueue(currentOwner,"exam_results",$("school").value,"upsert",row);throw result.error;}}
     }
-    status("examStatus","Exam results saved successfully!");
+    status("examStatus",offlineMode?"Results saved offline; sync pending.":"Exam results saved successfully!");
   }catch(err){status("examStatus",err.message||"Could not save exam results.",true);}
   finally{$("saveExamBtn").disabled=false;}
 });
+async function cacheExamResults(){
+  if(!currentOwner||offlineMode||!db||!navigator.onLine)return;
+  const res=await db.from("exam_results").select("*");if(res.error)return;
+  const schoolByStudent=new Map();
+  for(const school of SCHOOL_NAMES){const cached=await OfflineStore.getRows(currentOwner,"students",school);cached.forEach(st=>schoolByStudent.set(st.id,school));}
+  const grouped={};for(const row of (res.data||[])){const school=schoolByStudent.get(row.student_id);if(school)(grouped[school]||(grouped[school]=[])).push(row);}
+  for(const school of SCHOOL_NAMES)await OfflineStore.putRows(currentOwner,"exam_results",school,grouped[school]||[]);
+}
 async function loadDashboard(){
-  if(!db)return;
-  const {data,error}=await db.from("students").select("school");
-  if(error){console.error(error);return;}
-  const all=data||[];
+  if(!currentOwner)return;let all=[];
+  for(const school of SCHOOL_NAMES){let rows=null;if(!offlineMode&&navigator.onLine){const r=await db.from("students").select("*").eq("school",school);if(!r.error){rows=r.data||[];await OfflineStore.putRows(currentOwner,"students",school,rows);}}
+    if(!rows)rows=await OfflineStore.getRows(currentOwner,"students",school);all.push(...rows);}
   $("intifaacCount").textContent=all.filter(s=>s.school===SCHOOL_NAMES[0]).length;
-  $("waridadCount").textContent=all.filter(s=>s.school===SCHOOL_NAMES[1]).length;
-  $("totalCount").textContent=all.length;
+  $("waridadCount").textContent=all.filter(s=>s.school===SCHOOL_NAMES[1]).length;$("totalCount").textContent=all.length;
 }
 function renderStudents(){
   const q=$("search").value.trim().toLowerCase();
@@ -593,14 +510,7 @@ function renderStudents(){
     const del=document.createElement("button");del.className="smallbtn danger";del.textContent="Delete";del.onclick=()=>deleteStudent(s.id);
     const wa=document.createElement("button");wa.className="smallbtn";wa.textContent="WhatsApp";wa.style.background="#25D366";
     wa.onclick=()=>contactParent(s);
-   const card=document.createElement("button");
-card.className="smallbtn";
-card.textContent="ID Card";
-card.style.background="#12304a";
-card.onclick=()=>showStudentIDCard(s.id);
-td.append(edit,del,wa,card);
-tr.appendChild(td);
-body.appendChild(tr);
+    td.append(edit,del,wa);tr.appendChild(td);body.appendChild(tr);
   });
 }
 async function contactParent(student){
@@ -621,8 +531,9 @@ function editStudent(id){
 }
 async function deleteStudent(id){
   const s=students.find(x=>x.id===id);if(!s||!confirm("Delete "+s.full_name+"?"))return;
-  const {error}=await db.from("students").delete().eq("id",id);
-  if(error){status("listStatus",error.message,true);return;}
+  await OfflineStore.removeRow(currentOwner,"students",s.school,id);
+  if(offlineMode)await OfflineStore.enqueue(currentOwner,"students",s.school,"delete",null,id);
+  else{const {error}=await db.from("students").delete().eq("id",id);if(error){await OfflineStore.enqueue(currentOwner,"students",s.school,"delete",null,id);status("listStatus","Delete saved locally; sync pending: "+error.message,true);}}
   await loadStudents();await loadDashboard();
 }
 window.addEventListener("beforeinstallprompt",event=>{
@@ -632,586 +543,21 @@ $("installBtn").addEventListener("click",async()=>{
   if(!installPrompt)return;
   installPrompt.prompt();await installPrompt.userChoice;installPrompt=null;$("installBtn").classList.add("hidden");
 });
-  async function loadAcademicYear(){
-  if(!db)return;
-
-  const school=$("yearSchool").value;
-  const {data,error}=await db
-    .from("school_settings")
-    .select("academic_year")
-    .eq("school",school)
-    .maybeSingle();
-
-  if(error){
-    status("yearStatus",error.message,true);
-    return;
-  }
-
-  if(data){
-    $("academicYear").value=data.academic_year;
-    status("yearStatus","Academic year loaded.");
-  }
-}
-
-async function saveAcademicYear(){
-  if(!db)return;
-
-  const school=$("yearSchool").value;
-  const year=$("academicYear").value.trim();
-
-  if(!/^\d{4}-\d{2}$/.test(year)){
-    status("yearStatus","Use format 2026-27.",true);
-    return;
-  }
-
-  $("saveYearBtn").disabled=true;
-
-  const {error}=await db
-    .from("school_settings")
-    .upsert(
-      {school:school,academic_year:year},
-      {onConflict:"school"}
-    );
-
-  $("saveYearBtn").disabled=false;
-
-  if(error){
-    status("yearStatus",error.message,true);
-    return;
-  }
-
-  status("yearStatus","Academic year saved successfully.");
-}
-
-$("yearSchool").addEventListener("change",loadAcademicYear);
-$("saveYearBtn").addEventListener("click",saveAcademicYear);
 if("serviceWorker" in navigator){
   window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(err=>console.warn("Service worker:",err)));
 }
-updateExamTypes();updateReportTypes();showExamSubjects();initializeSupabase ();
-async function showStudentIDCard(studentId){
-  const s = students.find(x => String(x.id) === String(studentId));
-
-  if(!s){
-    alert("Student not found.");
-    return;
+updateExamTypes();updateReportTypes();showExamSubjects();
+(async()=>{
+  const loaded=await loadSupabaseLibrary();
+  if(loaded){ await start(); }
+  else{
+    await OfflineStore.openDB();
+    const saved=localStorage.getItem(OFFLINE_OWNER_KEY);
+    if(!navigator.onLine && saved){ currentOwner=saved; offlineMode=true; await showApp(); status("loginStatus","Offline access: previously signed-in administrator."); }
+    else status("loginStatus","Supabase could not load. Check your internet connection, then reload this page.",true);
+    updateConnectionBadge();
   }
-
-  const win = window.open("", "_blank");
-
-  if(!win){
-    alert("Please allow popups in your browser.");
-    return;
-  }
-
-  let photo = "";
-
-  if(s.photo_path){
-    const {data,error} = await db.storage
-      .from("student-photos")
-      .createSignedUrl(s.photo_path,3600);
-
-    if(!error && data){
-      photo = data.signedUrl;
-    }
-  }
-
-  const isIntifaac = s.school === "Intifaac Private School";
-
-  const schoolName = isIntifaac
-    ? "Intifaac Private School"
-    : "War-idad Secondary School";
-
-  const logo = isIntifaac
-    ? "astaanta-INTIFAAC-bilaa-gadaal.png"
-    : "waridad-logo.png";
-
-  const stamp = isIntifaac
-    ? "intifaac-stamp.png"
-    : "waridad-stamp.png";
-
-  const title = isIntifaac
-    ? "Principal"
-    : "Designer & Lecturer";
-const appAssets = new URL("./", window.location.href).href;
-
-const logoUrl = new URL(logo, appAssets).href;
-
-let stampUrl = new URL(stamp, appAssets).href;
-let signatureUrl = new URL("abdiweli-signature.png", appAssets).href;
-
-const assetFolder = isIntifaac ? "intifaac" : "waridad";
-
-const { data: assetFiles, error: assetError } = await db.storage
-  .from("school-assets")
-  .list(assetFolder);
-
-if (assetError) {
-  console.error("School assets error:", assetError.message);
-} else {
-  const savedStamp = assetFiles.find(f =>
-    f.name.startsWith("school-stamp.")
-  );
-
-  const savedSignature = assetFiles.find(f =>
-    f.name.startsWith("principal-signature.")
-  );
-
-  if (savedStamp) {
-    const { data } = await db.storage
-      .from("school-assets")
-      .createSignedUrl(`${assetFolder}/${savedStamp.name}`, 3600);
-
-    if (data) stampUrl = data.signedUrl;
-  }
-
-  if (savedSignature) {
-    const { data } = await db.storage
-      .from("school-assets")
-      .createSignedUrl(`${assetFolder}/${savedSignature.name}`, 3600);
-
-    if (data) signatureUrl = data.signedUrl;
-  }
-}
-  const safe = v => String(v || "").replace(/[&<>"']/g,c=>({
-    "&":"&amp;",
-    "<":"&lt;",
-    ">":"&gt;",
-    '"':"&quot;",
-    "'":"&#39;"
-  }[c]));
-
-  win.document.write(`
-  <!DOCTYPE html>
-  <html>
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Student ID Card</title>
-
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
-    <style>
-      *{
-        box-sizing:border-box;
-      }
-
-      body{
-        margin:0;
-        padding:20px;
-        background:#edf1f6;
-        font-family:'Poppins',Arial,sans-serif;
-        text-align:center;
-        color:#12304a;
-      }
-
-      .controls{
-        margin-bottom:25px;
-      }
-
-      select,button{
-        padding:12px 18px;
-        margin:6px;
-        border:0;
-        border-radius:7px;
-        font-size:14px;
-        cursor:pointer;
-      }
-
-      button{
-        background:#11000a;
-        color:white;
-      }
-
-      .cards{
-        display:flex;
-        justify-content:center;
-        align-items:flex-start;
-        gap:18px;
-        flex-wrap:wrap;
-      }
-
-      .card{
-        width:320px;
-        height:500px;
-        position:relative;
-        overflow:hidden;
-        background:white;
-        border-radius:13px;
-        border:2px solid #12304a;
-        box-shadow:0 4px 15px #bbb;
-        text-align:center;
-      }
-
-     .top{
-  height:120px;
-  background:#12304a;
-  color:white;
-  padding:15px;
-  position:relative;
-  z-index:1;
-}
-
-.top::after{
-  content:"";
-  position:absolute;
-  left:-20%;
-  bottom:-32px;
-  width:130%;
-  height:80px;
-  background:white;
-  border-radius:50%;
-}
-
-      .logo{
-        width:65px;
-        height:65px;
-        object-fit:contain;
-        background:white;
-        border-radius:50%;
-        padding:3px;
-      }
-
-      .school{
-        font-size:14px;
-        font-weight:800;
-        margin:4px 0;
-      }
-
-     .heading{
-  color:#e68b25;
-  font-size:15px;
-  font-weight:800;
-  margin:2px 0 12px;
-  position:relative;
-  z-index:2;
-}
-
-      .photo{
-        width:105px;
-        height:120px;
-        object-fit:cover;
-        border:3px solid #e68b25;
-        border-radius:8px;
-        margin:12px auto 5px;
-        display:block;
-      }
-
-      .no-photo{
-        width:105px;
-        height:120px;
-        margin:12px auto 5px;
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        background:#e8edf2;
-        border:2px dashed #12304a;
-        font-size:12px;
-      }
-
-      .student-name{
-        font-family:'Montserrat',Arial,sans-serif;
-        font-weight:800;
-        font-size:17px;
-        margin:8px 5px;
-      }
-
-      .details{
-        text-align:left;
-        padding:5px 20px;
-        font-size:12px;
-        line-height:2;
-      }
-
-      .details b{
-        color:#12304a;
-      }
-
-      .orange{
-        color:#e68b25;
-      }
-
-      .footer{
-        position:absolute;
-        bottom:0;
-        left:0;
-        width:100%;
-        padding:9px;
-        background:#12304a;
-        color:white;
-        font-size:10px;
-        font-weight:bold;
-      }
-
-     .back-title{
-  background:#12304a;
-  color:white;
-padding:18px 8px 40px;
-  font-weight:800;
-  font-size:16px;
-  position:relative;
-  z-index:1;
-}
-
-.back-title::after{
-  content:"";
-  position:absolute;
-  left:-5%;
-  bottom:-17px;
-  width:110%;
-  height:34px;
-  background:white;
-  border-radius:50%;
-}
-
-  .back-content{
-  height:270px;
-  overflow:hidden;
-  padding:15px 15px 8px;
-  font-size:9.5px;
-  line-height:1.25;
-  text-align:left;
-}
-
-.back-content p{
-  margin:3px 0;
-}
-
-.back-content h4{
-  color:#e68b25;
-  text-align:center;
-  margin:5px 0 8px;
-}
-
-    .signature-area{
-  position:absolute;
-  bottom:35px;
-  left:0;
-  width:100%;
-  display:flex;
-  flex-wrap:wrap;
-  align-items:center;
-  justify-content:center;
-  column-gap:0;
-  row-gap:0;
-}
-
-.signature-area .role{
-  flex:0 0 100%;
-  text-align:center;
-  margin:0;
-  font-size:11px;
-  color:#e68b25;
-  font-weight:700;
-}
-
-.signature{
-  width:105px;
-  height:45px;
-  object-fit:contain;
-  margin-right:-35px;
-  position:relative;
-  z-index:1;
-}
-
-.stamp{
-  width:65px;
-  height:65px;
-  object-fit:contain;
-  margin:0;
-  display:block;
-  position:relative;
-  z-index:2;
-}
-.manager{
-  font-family:'Montserrat',Arial,sans-serif;
-  font-weight:700;
-  font-size:12px;
-}
-
-      .blue .top,
-      .blue .footer,
-      .blue .back-title{
-        background:#12304a;
-      }
-
-      .white{
-        border-color:#12304a;
-      }
-
-      .white .top,
-      .white .footer,
-      .white .back-title{
-        background:white;
-        color:#12304a;
-        border-bottom:2px solid #12304a;
-      }
-
-      .white .heading,
-      .white .orange{
-        color:#d77c19;
-      }
-
-      .premium{
-        border:4px solid #c49a35;
-        background:#fffaf0;
-      }
-
-      .premium .top,
-      .premium .footer,
-      .premium .back-title{
-        background:#172b4d;
-      }
-
-      .premium .heading,
-      .premium .orange{
-        color:#c49a35;
-      }
-
-      @media print{
-        @page{
-          size:A4 portrait;
-          margin:10mm;
-        }
-
-        body{
-          background:white;
-          padding:0;
-        }
-
-        .controls{
-          display:none;
-        }
-
-        .cards{
-          display:flex;
-          flex-direction:row;
-          flex-wrap:nowrap;
-          justify-content:center;
-          gap:8mm;
-        }
-
-        .card{
-          width:85mm;
-          height:135mm;
-          flex:none;
-          box-shadow:none;
-          print-color-adjust:exact;
-          -webkit-print-color-adjust:exact;
-        }
-      }
-    </style>
-  </head>
-
-  <body>
-
-    <div class="controls">
-      <h2>Student ID Card Designer</h2>
-
-      <select id="design" onchange="changeDesign(this.value)">
-        <option value="blue">Design 1 - Professional Blue</option>
-        <option value="white">Design 2 - Modern White</option>
-        <option value="premium">Design 3 - Premium School</option>
-      </select>
-
-      <button onclick="window.print()">Print Front & Back</button>
-    </div>
-
-    <div class="cards" id="cards">
-
-      <div class="card blue">
-
-        <div class="top">
-         <img class="logo" src="${logoUrl}">
-          <div class="school">${safe(schoolName)}</div>
-        </div>
-
-        <div class="heading">STUDENT ID CARD</div>
-
-        ${photo
-          ? `<img class="photo" src="${photo}">`
-          : `<div class="no-photo">Student Photo</div>`
-        }
-
-        <div class="student-name">${safe(s.full_name)}</div>
-
-        <div class="details">
-          <div>
-            <b>Student ID:</b>
-            <span class="orange">${safe(s.admission_no)}</span>
-          </div>
-
-          <div>
-            <b>Class:</b> ${safe(s.class)}
-          </div>
-
-          <div>
-            <b>Gender:</b> ${safe(s.gender)}
-          </div>
-
-          <div>
-            <b>Academic Year:</b> 2026–2027
-          </div>
-        </div>
-
-        <div class="footer">
-          OFFICIAL STUDENT IDENTIFICATION CARD
-        </div>
-
-      </div>
-
-     <div class="card blue">
-
-  <div class="back-title">
-    TERMS & CONDITIONS
-  </div>
-
-  <div class="back-content">
-    <h4>IMPORTANT INFORMATION</h4>
-
-    <p>1. This card is the official property of ${safe(schoolName)}.</p>
-    <p>2. The student must carry this card while attending school.</p>
-    <p>3. This card must not be transferred to another student.</p>
-    <p>4. If lost, please report it to the school administration.</p>
-    <p>5. The card must be returned when requested by the school.</p>
-    <p>6. Any misuse of this card may result in disciplinary action.</p>
-    <p>7. School Administration Contact:</p>
-<p>Email: intifaacschools6@gmail.com</p>
-<p>Phone: 0634657200</p><p>. 
-  </div>
-
-  <div class="signature-area">
-
-    <div class="role">PRINCIPAL SIGNATURE</div>
-
-    <img class="signature" src="${signatureUrl}">
-
-    <img class="stamp" src="${stampUrl}">
-
-  </div>
-
-  <div class="footer">
-    ${safe(schoolName)}
-  </div>
-
-</div>
-
-</div>
-    <script>
-      function changeDesign(design){
-        document.querySelectorAll(".card").forEach(card=>{
-          card.classList.remove("blue","white","premium");
-          card.classList.add(design);
-        });
-      }
-    <\/script>
-
-  </body>
-  </html>
-  `);
-
-  win.document.close();
-}
+})();
 </script>
 </body>
 </html>
