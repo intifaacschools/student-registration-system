@@ -135,6 +135,28 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
   </div>
 
   <div class="card">
+  <h2>✍️ ID Card Signature & Stamp Editor</h2>
+
+  <label for="assetSchool">Select School</label>
+  <select id="assetSchool">
+    <option>Intifaac Private School</option>
+    <option>War-idad Secondary School</option>
+  </select>
+
+  <label for="principalSignature">Principal Signature</label>
+  <input type="file" id="principalSignature" accept="image/png,image/jpeg,image/webp">
+
+  <label for="schoolStamp">School Stamp</label>
+  <input type="file" id="schoolStamp" accept="image/png,image/jpeg,image/webp">
+
+  <button type="button" id="saveSchoolAssets">
+    Save Signature & Stamp
+  </button>
+
+  <div id="schoolAssetsStatus" class="status" role="status"></div>
+</div>
+
+  <div class="card">
     <div class="topline"><h2>Student List</h2><div class="no-print actions" style="margin:0"><input id="search" placeholder="Search name or roll number" style="width:240px"><button id="printBtn" class="secondary" type="button">Print list</button></div></div>
     <p id="count" class="status"></p>
     <div class="tablewrap"><table><thead><tr><th>Roll No.</th><th>Student name</th><th>Class</th><th>Gender</th><th>Parent</th><th>Phone</th><th class="no-print">Actions</th></tr></thead><tbody id="studentsBody"><tr><td colspan="7">No students yet.</td></tr></tbody></table></div>
@@ -510,7 +532,8 @@ function renderStudents(){
     const del=document.createElement("button");del.className="smallbtn danger";del.textContent="Delete";del.onclick=()=>deleteStudent(s.id);
     const wa=document.createElement("button");wa.className="smallbtn";wa.textContent="WhatsApp";wa.style.background="#25D366";
     wa.onclick=()=>contactParent(s);
-    td.append(edit,del,wa);tr.appendChild(td);body.appendChild(tr);
+    const card=document.createElement("button");card.className="smallbtn";card.textContent="ID Card";card.style.background="#12304a";card.onclick=()=>showStudentIDCard(s.id);
+    td.append(edit,del,wa,card);tr.appendChild(td);body.appendChild(tr);
   });
 }
 async function contactParent(student){
@@ -558,6 +581,563 @@ updateExamTypes();updateReportTypes();showExamSubjects();
     updateConnectionBadge();
   }
 })();
+
+$("saveSchoolAssets").addEventListener("click", async () => {
+  if (!db || offlineMode || !navigator.onLine) { status("schoolAssetsStatus", "Connect to the internet to save signature and stamp.", true); return; }
+  const school = $("assetSchool").value;
+  const folder = school === SCHOOL_NAMES[0] ? "intifaac" : "waridad";
+  const signature = $("principalSignature").files[0];
+  const stamp = $("schoolStamp").files[0];
+  const statusBox = $("schoolAssetsStatus");
+  const files = [{ file: signature, name: "principal-signature" }, { file: stamp, name: "school-stamp" }];
+  try {
+    statusBox.textContent = "Saving...";
+    if (!signature && !stamp) throw new Error("Please select a signature or stamp image.");
+    for (const item of files) {
+      if (!item.file) continue;
+      if (!["image/png", "image/jpeg", "image/webp"].includes(item.file.type)) throw new Error("Use PNG, JPG or WEBP images only.");
+      if (item.file.size > 2 * 1024 * 1024) throw new Error("Each image must not exceed 2 MB.");
+      const extension = item.file.type.split("/")[1].replace("jpeg", "jpg");
+      const path = `${folder}/${item.name}.${extension}`;
+      const result = await db.storage.from("school-assets").upload(path, item.file, { upsert: true, contentType: item.file.type });
+      if (result.error) throw result.error;
+    }
+    statusBox.textContent = "Signature and stamp saved successfully.";
+    $("principalSignature").value = ""; $("schoolStamp").value = "";
+  } catch (error) { statusBox.textContent = error.message || "Could not save school assets."; }
+});
+
+async function showStudentIDCard(studentId){
+  const s = students.find(x => String(x.id) === String(studentId));
+
+  if(!s){
+    alert("Student not found.");
+    return;
+  }
+
+  const win = window.open("", "_blank");
+
+  if(!win){
+    alert("Please allow popups in your browser.");
+    return;
+  }
+
+  let photo = "";
+
+  if(s.photo_path){
+    const {data,error} = await db.storage
+      .from("student-photos")
+      .createSignedUrl(s.photo_path,3600);
+
+    if(!error && data){
+      photo = data.signedUrl;
+    }
+  }
+
+  const isIntifaac = s.school === "Intifaac Private School";
+
+  const schoolName = isIntifaac
+    ? "Intifaac Private School"
+    : "War-idad Secondary School";
+
+  const logo = isIntifaac
+    ? "astaanta-INTIFAAC-bilaa-gadaal.png"
+    : "waridad-logo.png";
+
+  const stamp = isIntifaac
+    ? "intifaac-stamp.png"
+    : "waridad-stamp.png";
+
+  const title = isIntifaac
+    ? "Principal"
+    : "Designer & Lecturer";
+const appAssets = new URL("./", window.location.href).href;
+
+const logoUrl = new URL(logo, appAssets).href;
+
+let stampUrl = new URL(stamp, appAssets).href;
+let signatureUrl = new URL("abdiweli-signature.png", appAssets).href;
+
+const assetFolder = isIntifaac ? "intifaac" : "waridad";
+
+const { data: assetFiles, error: assetError } = await db.storage
+  .from("school-assets")
+  .list(assetFolder);
+
+if (assetError) {
+  console.error("School assets error:", assetError.message);
+} else {
+  const savedStamp = assetFiles.find(f =>
+    f.name.startsWith("school-stamp.")
+  );
+
+  const savedSignature = assetFiles.find(f =>
+    f.name.startsWith("principal-signature.")
+  );
+
+  if (savedStamp) {
+    const { data } = await db.storage
+      .from("school-assets")
+      .createSignedUrl(`${assetFolder}/${savedStamp.name}`, 3600);
+
+    if (data) stampUrl = data.signedUrl;
+  }
+
+  if (savedSignature) {
+    const { data } = await db.storage
+      .from("school-assets")
+      .createSignedUrl(`${assetFolder}/${savedSignature.name}`, 3600);
+
+    if (data) signatureUrl = data.signedUrl;
+  }
+}
+  const safe = v => String(v || "").replace(/[&<>"']/g,c=>({
+    "&":"&amp;",
+    "<":"&lt;",
+    ">":"&gt;",
+    '"':"&quot;",
+    "'":"&#39;"
+  }[c]));
+
+  win.document.write(`
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Student ID Card</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+      *{
+        box-sizing:border-box;
+      }
+
+      body{
+        margin:0;
+        padding:20px;
+        background:#edf1f6;
+        font-family:'Poppins',Arial,sans-serif;
+        text-align:center;
+        color:#12304a;
+      }
+
+      .controls{
+        margin-bottom:25px;
+      }
+
+      select,button{
+        padding:12px 18px;
+        margin:6px;
+        border:0;
+        border-radius:7px;
+        font-size:14px;
+        cursor:pointer;
+      }
+
+      button{
+        background:#11000a;
+        color:white;
+      }
+
+      .cards{
+        display:flex;
+        justify-content:center;
+        align-items:flex-start;
+        gap:18px;
+        flex-wrap:wrap;
+      }
+
+      .card{
+        width:320px;
+        height:500px;
+        position:relative;
+        overflow:hidden;
+        background:white;
+        border-radius:13px;
+        border:2px solid #12304a;
+        box-shadow:0 4px 15px #bbb;
+        text-align:center;
+      }
+
+     .top{
+  height:120px;
+  background:#12304a;
+  color:white;
+  padding:15px;
+  position:relative;
+  z-index:1;
+}
+
+.top::after{
+  content:"";
+  position:absolute;
+  left:-20%;
+  bottom:-32px;
+  width:130%;
+  height:80px;
+  background:white;
+  border-radius:50%;
+  z-index:0;
+}
+
+      .logo{
+        width:65px;
+        height:65px;
+        object-fit:contain;
+        background:white;
+        border-radius:50%;
+        padding:3px;
+        position:relative;
+        z-index:2;
+      }
+
+      .school{
+  font-size:14px;
+  font-weight:800;
+  color:#12304a;
+  text-align:center;
+  position:relative;
+  z-index:2;
+  margin:-18px 0 12px;
+}
+
+     .heading{
+  color:#e68b25;
+  font-size:15px;
+  font-weight:800;
+  margin:2px 0 12px;
+  position:relative;
+  z-index:2;
+}
+
+      .photo{
+        width:105px;
+        height:120px;
+        object-fit:cover;
+        border:3px solid #e68b25;
+        border-radius:8px;
+        margin:12px auto 5px;
+        display:block;
+      }
+
+      .no-photo{
+        width:105px;
+        height:120px;
+        margin:12px auto 5px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        background:#e8edf2;
+        border:2px dashed #12304a;
+        font-size:12px;
+      }
+
+      .student-name{
+        font-family:'Montserrat',Arial,sans-serif;
+        font-weight:800;
+        font-size:17px;
+        margin:8px 5px;
+      }
+
+      .details{
+        text-align:left;
+        padding:5px 20px;
+        font-size:12px;
+        line-height:2;
+      }
+
+      .details b{
+        color:#12304a;
+      }
+
+      .orange{
+        color:#e68b25;
+      }
+
+      .footer{
+        position:absolute;
+        bottom:0;
+        left:0;
+        width:100%;
+        padding:9px;
+        background:#12304a;
+        color:white;
+        font-size:10px;
+        font-weight:bold;
+      }
+
+     .back-title{
+  background:#12304a;
+  color:white;
+padding:18px 8px 40px;
+  font-weight:800;
+  font-size:16px;
+  position:relative;
+  z-index:1;
+}
+
+.back-title::after{
+  content:"";
+  position:absolute;
+  left:-5%;
+  bottom:-17px;
+  width:110%;
+  height:34px;
+  background:white;
+  border-radius:50%;
+}
+
+  .back-content{
+  height:270px;
+  overflow:hidden;
+  padding:15px 15px 8px;
+  font-size:9.5px;
+  line-height:1.25;
+  text-align:left;
+}
+
+.back-content p{
+  margin:3px 0;
+}
+
+.back-content h4{
+  color:#e68b25;
+  text-align:center;
+  margin:5px 0 8px;
+}
+
+    .signature-area{
+  position:absolute;
+  bottom:35px;
+  left:0;
+  width:100%;
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:center;
+  column-gap:0;
+  row-gap:0;
+}
+
+.signature-area .role{
+  flex:0 0 100%;
+  text-align:center;
+  margin:0;
+  font-size:11px;
+  color:#e68b25;
+  font-weight:700;
+}
+
+.signature{
+  width:105px;
+  height:45px;
+  object-fit:contain;
+  margin-right:-35px;
+  position:relative;
+  z-index:1;
+}
+
+.stamp{
+  width:65px;
+  height:65px;
+  object-fit:contain;
+  margin:0;
+  display:block;
+  position:relative;
+  z-index:2;
+}
+.manager{
+  font-family:'Montserrat',Arial,sans-serif;
+  font-weight:700;
+  font-size:12px;
+}
+
+      .blue .top,
+      .blue .footer,
+      .blue .back-title{
+        background:#12304a;
+      }
+
+      .white{
+        border-color:#12304a;
+      }
+
+      .white .top,
+      .white .footer,
+      .white .back-title{
+        background:white;
+        color:#12304a;
+        border-bottom:2px solid #12304a;
+      }
+
+      .white .heading,
+      .white .orange{
+        color:#d77c19;
+      }
+
+      .premium{
+        border:4px solid #c49a35;
+        background:#fffaf0;
+      }
+
+      .premium .top,
+      .premium .footer,
+      .premium .back-title{
+        background:#172b4d;
+      }
+
+      .premium .heading,
+      .premium .orange{
+        color:#c49a35;
+      }
+
+      @media print{
+        @page{
+          size:A4 portrait;
+          margin:10mm;
+        }
+
+        body{
+          background:white;
+          padding:0;
+        }
+
+        .controls{
+          display:none;
+        }
+
+        .cards{
+          display:flex;
+          flex-direction:row;
+          flex-wrap:nowrap;
+          justify-content:center;
+          gap:8mm;
+        }
+
+        .card{
+          width:85mm;
+          height:135mm;
+          flex:none;
+          box-shadow:none;
+          print-color-adjust:exact;
+          -webkit-print-color-adjust:exact;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+
+    <div class="controls">
+      <h2>Student ID Card Designer</h2>
+
+      <select id="design" onchange="changeDesign(this.value)">
+        <option value="blue">Design 1 - Professional Blue</option>
+        <option value="white">Design 2 - Modern White</option>
+        <option value="premium">Design 3 - Premium School</option>
+      </select>
+
+      <button onclick="window.print()">Print Front & Back</button>
+    </div>
+
+    <div class="cards" id="cards">
+
+      <div class="card blue">
+
+       <div class="top">
+  <img class="logo" src="${logoUrl}">
+</div>
+
+<div class="school">${safe(schoolName)}</div>
+
+<div class="heading">STUDENT ID CARD</div>
+
+        ${photo
+          ? `<img class="photo" src="${photo}">`
+          : `<div class="no-photo">Student Photo</div>`
+        }
+
+        <div class="student-name">${safe(s.full_name)}</div>
+
+        <div class="details">
+          <div>
+            <b>Student ID:</b>
+            <span class="orange">${safe(s.admission_no)}</span>
+          </div>
+
+          <div>
+            <b>Class:</b> ${safe(s.class)}
+          </div>
+
+          <div>
+            <b>Gender:</b> ${safe(s.gender)}
+          </div>
+
+          <div>
+            <b>Academic Year:</b> 2026–2027
+          </div>
+        </div>
+
+        <div class="footer">
+          OFFICIAL STUDENT IDENTIFICATION CARD
+        </div>
+
+      </div>
+
+     <div class="card blue">
+
+  <div class="back-title">
+    TERMS & CONDITIONS
+  </div>
+
+  <div class="back-content">
+    <h4>IMPORTANT INFORMATION</h4>
+
+    <p>1. This card is the official property of ${safe(schoolName)}.</p>
+    <p>2. The student must carry this card while attending school.</p>
+    <p>3. This card must not be transferred to another student.</p>
+    <p>4. If lost, please report it to the school administration.</p>
+    <p>5. The card must be returned when requested by the school.</p>
+    <p>6. Any misuse of this card may result in disciplinary action.</p>
+    <p>7. School Administration Contact:</p>
+<p>Email: intifaacschools6@gmail.com</p>
+<p>Phone: 0634657200</p><p>.
+  </div>
+
+  <div class="signature-area">
+
+    <div class="role">PRINCIPAL SIGNATURE</div>
+
+    <img class="signature" src="${signatureUrl}">
+
+    <img class="stamp" src="${stampUrl}">
+
+  </div>
+
+  <div class="footer">
+    ${safe(schoolName)}
+  </div>
+
+</div>
+
+</div>
+    <script>
+      function changeDesign(design){
+        document.querySelectorAll(".card").forEach(card=>{
+          card.classList.remove("blue","white","premium");
+          card.classList.add(design);
+        });
+      }
+    <\/script>
+
+  </body>
+  </html>
+  `);
+
+  win.document.close();
+}
 </script>
 </body>
 </html>
